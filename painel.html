@@ -5,19 +5,28 @@
     <title>Painel de Membros</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #121212; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .container { background: #1e1e1e; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); width: 300px; text-align: center; }
+        body { font-family: Arial, sans-serif; background-color: #121212; color: #fff; margin: 0; display: flex; flex-direction: column; align-items: center; height: 100vh; }
+        .container { background: #1e1e1e; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); width: 300px; text-align: center; margin-top: 50px; }
         button { width: 100%; padding: 12px; margin: 8px 0; border: none; color: #fff; font-weight: bold; border-radius: 4px; cursor: pointer; }
         .btn-acao { background: #00bcd4; }
         .btn-diretoria { background: #fbc02d; color: #000; }
         .btn-sair { background: #ff5252; margin-top: 20px; }
+        .btn-voltar { background: #757575; width: auto; padding: 10px 20px; margin: 10px; }
+        
+        #area-drive { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; }
+        iframe { width: 90%; height: 80vh; border: none; border-radius: 8px; background: #fff; }
     </style>
 </head>
 <body>
 
-<div class="container">
+<div id="menu-principal" class="container">
     <h2>Painel de Membros</h2>
     <div id="conteudo-dinamico">Carregando...</div>
+</div>
+
+<div id="area-drive">
+    <button class="btn-voltar" onclick="voltar()">⬅ Voltar ao Menu</button>
+    <iframe id="iframe-drive" src=""></iframe>
 </div>
 
 <script>
@@ -29,33 +38,44 @@
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (!session) { window.location.replace("index.html"); return; }
 
-        // Busca o perfil do usuário e a lista de configurações
         const { data: perfil } = await supabaseClient.from('perfis').select('grau, diretoria').eq('id', session.user.id).single();
         const { data: configs } = await supabaseClient.from('configuracoes').select('grau, link');
 
         let html = "";
-        const getLink = (grau) => configs.find(c => c.grau === grau)?.link || "#";
+        const getId = (grau) => configs.find(c => c.grau === grau)?.link || "";
 
-        // Lógica de exibição baseada no grau (Hierárquica)
         if (["AM", "CM", "MM", "MI"].includes(perfil.grau)) 
-            html += `<button class="btn-acao" onclick="window.open('${getLink('AM')}', '_blank')">Acessar Aprendiz</button>`;
+            html += `<button class="btn-acao" onclick="abrirPasta('${getId('AM')}')">Acessar Aprendiz</button>`;
         
         if (["CM", "MM", "MI"].includes(perfil.grau)) 
-            html += `<button class="btn-acao" onclick="window.open('${getLink('CM')}', '_blank')">Acessar Companheiro</button>`;
+            html += `<button class="btn-acao" onclick="abrirPasta('${getId('CM')}')">Acessar Companheiro</button>`;
         
         if (["MM", "MI"].includes(perfil.grau)) 
-            html += `<button class="btn-acao" onclick="window.open('${getLink('MM')}', '_blank')">Acessar Mestre</button>`;
+            html += `<button class="btn-acao" onclick="abrirPasta('${getId('MM')}')">Acessar Mestre</button>`;
 
-        // Acesso especial para Diretoria
         if (perfil.diretoria) {
-            html += `<button class="btn-diretoria" onclick="window.open('${getLink('DIRETORIA')}', '_blank')">Área da Diretoria</button>`;
+            html += `<button class="btn-diretoria" onclick="abrirPasta('${getId('DIRETORIA')}')">Área da Diretoria</button>`;
         }
         
         html += `<button class="btn-sair" onclick="sair()">Sair da Conta</button>`;
         document.getElementById('conteudo-dinamico').innerHTML = html;
     }
 
+    function abrirPasta(idDaPasta) {
+        if(!idDaPasta) { alert("ID não encontrado."); return; }
+        document.getElementById('menu-principal').style.display = 'none';
+        document.getElementById('area-drive').style.display = 'flex';
+        document.getElementById('iframe-drive').src = `https://drive.google.com/embeddedfolderview?id=${idDaPasta}#grid`;
+    }
+
+    function voltar() {
+        document.getElementById('menu-principal').style.display = 'block';
+        document.getElementById('area-drive').style.display = 'none';
+        document.getElementById('iframe-drive').src = "";
+    }
+
     async function sair() { await supabaseClient.auth.signOut(); window.location.href = "index.html"; }
+    
     carregarPainel();
 </script>
 </body>
