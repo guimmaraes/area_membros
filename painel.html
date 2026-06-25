@@ -29,13 +29,27 @@
         const { data: { session } } = await supabaseClient.auth.getSession();
         if (!session) { window.location.replace("index.html"); return; }
 
+        // Busca o perfil do usuário e a lista de configurações
         const { data: perfil } = await supabaseClient.from('perfis').select('grau, diretoria').eq('id', session.user.id).single();
+        const { data: configs } = await supabaseClient.from('configuracoes').select('grau, link');
 
         let html = "";
-        if (perfil.grau === "AM" || perfil.grau === "CM" || perfil.grau === "MM" || perfil.diretoria) html += `<button class="btn-acao" onclick="window.open('LINK_AM', '_blank')">Acessar Aprendiz</button>`;
-        if (perfil.grau === "CM" || perfil.grau === "MM" || perfil.diretoria) html += `<button class="btn-acao" onclick="window.open('LINK_CM', '_blank')">Acessar Companheiro</button>`;
-        if (perfil.grau === "MM" || perfil.diretoria) html += `<button class="btn-acao" onclick="window.open('LINK_MM', '_blank')">Acessar Mestre</button>`;
-        if (perfil.diretoria) html += `<button class="btn-diretoria" onclick="window.open('LINK_DIR', '_blank')">Área da Diretoria</button>`;
+        const getLink = (grau) => configs.find(c => c.grau === grau)?.link || "#";
+
+        // Lógica de exibição baseada no grau (Hierárquica)
+        if (["AM", "CM", "MM", "MI"].includes(perfil.grau)) 
+            html += `<button class="btn-acao" onclick="window.open('${getLink('AM')}', '_blank')">Acessar Aprendiz</button>`;
+        
+        if (["CM", "MM", "MI"].includes(perfil.grau)) 
+            html += `<button class="btn-acao" onclick="window.open('${getLink('CM')}', '_blank')">Acessar Companheiro</button>`;
+        
+        if (["MM", "MI"].includes(perfil.grau)) 
+            html += `<button class="btn-acao" onclick="window.open('${getLink('MM')}', '_blank')">Acessar Mestre</button>`;
+
+        // Acesso especial para Diretoria
+        if (perfil.diretoria) {
+            html += `<button class="btn-diretoria" onclick="window.open('${getLink('DIRETORIA')}', '_blank')">Área da Diretoria</button>`;
+        }
         
         html += `<button class="btn-sair" onclick="sair()">Sair da Conta</button>`;
         document.getElementById('conteudo-dinamico').innerHTML = html;
