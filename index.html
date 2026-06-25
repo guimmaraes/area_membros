@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Área Restrita - Login</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #121212; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-container { background: #1e1e1e; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); width: 300px; text-align: center; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #333; background: #2a2a2a; color: #fff; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #00bcd4; border: none; color: #fff; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0097a7; }
+        .error { color: #ff5252; margin-top: 10px; font-size: 14px; }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <h2>Acesso Restrito</h2>
+    <input type="email" id="email" placeholder="E-mail" required>
+    <input type="password" id="password" placeholder="Senha" required>
+    <button onclick="fazerLogin()">Entrar</button>
+    <div class="error" id="mensagem-erro"></div>
+</div>
+
+<script>
+    // Configurações do seu projeto Supabase
+    const SUPABASE_URL = "https://ssmjxusvrcspnmubyseb.supabase.co/rest/v1/";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzbWp4dXN2cmNzcG5tdWJ5c2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNjA3NTgsImV4cCI6MjA5NzkzNjc1OH0.iEO1OQhx_emhYT_J_7bOYe3ypMqD_RWYvShKPQuRuzk";
+
+    const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function fazerLogin() {
+        const email = document.getElementById('email').value;
+        const password = document.getElementById('password').value;
+        const erroDiv = document.getElementById('mensagem-erro');
+        erroDiv.innerText = "";
+
+        // 1. Autentica o usuário no módulo Auth do Supabase
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+            email: email,
+            password: password,
+        });
+
+        if (authError) {
+            erroDiv.innerText = "Usuário ou senha incorretos.";
+            return;
+        }
+
+        // 2. Busca os dados de permissões na nossa tabela 'perfis' usando o ID autenticado
+        const { data: perfil, error: perfilError } = await supabase
+            .from('perfis')
+            .select('grau, diretoria')
+            .eq('id', authData.user.id)
+            .single();
+
+        if (perfilError || !perfil) {
+            erroDiv.innerText = "Erro ao carregar permissões do perfil.";
+            return;
+        }
+
+        // 3. Regra estrita de redirecionamento baseada no nível do usuário
+        if (perfil.diretoria === true) {
+            window.location.href = "LINK_DO_GOOGLE_SITE_DIRETORIA";
+        } else if (perfil.grau === "MM") {
+            window.location.href = "LINK_DO_GOOGLE_SITE_MESTRE";
+        } else if (perfil.grau === "CM") {
+            window.location.href = "LINK_DO_GOOGLE_SITE_COMPANHEIRO";
+        } else if (perfil.grau === "AM") {
+            window.location.href = "LINK_DO_GOOGLE_SITE_APRENDIZ";
+        } else {
+            erroDiv.innerText = "Perfil sem nível de acesso configurado.";
+        }
+    }
+</script>
+
+</body>
+</html>
