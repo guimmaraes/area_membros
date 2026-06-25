@@ -2,24 +2,34 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Área Restrita - Painel</title>
+    <title>Painel de Membros</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #121212; color: #fff; padding: 20px; text-align: center; }
-        .container { max-width: 600px; margin: 0 auto; background: #1e1e1e; padding: 30px; border-radius: 8px; }
-        button { width: 100%; padding: 15px; margin: 10px 0; background: #00bcd4; border: none; color: #fff; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 16px; }
-        button:hover { background: #0097a7; }
-        .btn-sair { background: #ff5252; margin-top: 30px; }
-        .btn-sair:hover { background: #d32f2f; }
+        body { font-family: 'Segoe UI', sans-serif; background-color: #121212; color: #fff; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin: 0; padding: 20px; }
+        .header { width: 100%; display: flex; justify-content: space-between; align-items: center; max-width: 800px; }
+        .container { width: 100%; max-width: 450px; background: #1e1e1e; padding: 30px; border-radius: 12px; text-align: center; box-shadow: 0 8px 20px rgba(0,0,0,0.5); }
+        button { width: 100%; padding: 14px; margin: 8px 0; border: none; color: #fff; font-weight: bold; border-radius: 6px; cursor: pointer; transition: 0.3s; }
+        .btn-acao { background: #00bcd4; } .btn-acao:hover { background: #008c9e; }
+        .btn-diretoria { background: #fbc02d; color: #000; }
+        .btn-sair { background: #ff5252; margin-top: 20px; }
+        .widgets { display: flex; gap: 20px; margin-bottom: 20px; }
     </style>
 </head>
 <body>
 
+<div class="header">
+    <a href="https://guimmaraes.github.io/" style="color:#aaa; text-decoration:none;">← Voltar ao Início</a>
+    <div id="relogio" style="font-weight:bold;">--:--:--</div>
+</div>
+
+<div class="widgets">
+    <a class="weatherwidget-io" href="https://forecast7.com/pt/n25d43n49d27/curitiba/" data-label_1="CURITIBA" data-theme="dark">CURITIBA</a>
+    <script>!function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src='https://weatherwidget.io/js/widget.min.js';fjs.parentNode.insertBefore(js,fjs);}}(document,'script','weatherwidget-io');</script>
+</div>
+
 <div class="container">
     <h2>Painel de Membros</h2>
-    <div id="conteudo-dinamico">Carregando permissões...</div>
-    <button class="btn-sair" onclick="sair()">Sair da Conta</button>
+    <div id="conteudo-dinamico">Carregando...</div>
 </div>
 
 <script>
@@ -27,55 +37,27 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzbWp4dXN2cmNzcG5tdWJ5c2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNjA3NTgsImV4cCI6MjA5NzkzNjc1OH0.iEO1OQhx_emhYT_J_7bOYe3ypMqD_RWYvShKPQuRuzk";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    // Relógio
+    setInterval(() => document.getElementById('relogio').innerText = new Date().toLocaleTimeString(), 1000);
+
     async function carregarPainel() {
-        // 1. Trava de Segurança: expulsa quem não tem sessão ativa
         const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session) {
-            window.location.replace("index.html");
-            return;
-        }
+        if (!session) { window.location.replace("index.html"); return; }
 
-        // 2. Busca as permissões do usuário logado
-        const { data: perfil, error } = await supabaseClient
-            .from('perfis')
-            .select('grau, diretoria')
-            .eq('id', session.user.id)
-            .single();
-
-        if (error || !perfil) {
-            document.getElementById('conteudo-dinamico').innerHTML = "Erro ao carregar seu perfil.";
-            return;
-        }
+        const { data: perfil } = await supabaseClient.from('perfis').select('grau, diretoria').eq('id', session.user.id).single();
 
         let html = "";
-
-        // 3. Constrói a tela de cima para baixo
-        if (perfil.grau === "AM" || perfil.grau === "CM" || perfil.grau === "MM" || perfil.diretoria) {
-            html += `<button onclick="window.open('COLE_LINK_DO_DRIVE_AM_AQUI', '_blank')">Acessar Pasta de Aprendiz</button>`;
-        }
+        if (perfil.grau === "AM" || perfil.grau === "CM" || perfil.grau === "MM" || perfil.diretoria) html += `<button class="btn-acao" onclick="window.open('LINK_AM', '_blank')">Acessar Aprendiz</button>`;
+        if (perfil.grau === "CM" || perfil.grau === "MM" || perfil.diretoria) html += `<button class="btn-acao" onclick="window.open('LINK_CM', '_blank')">Acessar Companheiro</button>`;
+        if (perfil.grau === "MM" || perfil.diretoria) html += `<button class="btn-acao" onclick="window.open('LINK_MM', '_blank')">Acessar Mestre</button>`;
+        if (perfil.diretoria) html += `<button class="btn-diretoria" onclick="window.open('LINK_DIR', '_blank')">Área da Diretoria</button>`;
         
-        if (perfil.grau === "CM" || perfil.grau === "MM" || perfil.diretoria) {
-            html += `<button onclick="window.open('COLE_LINK_DO_DRIVE_CM_AQUI', '_blank')">Acessar Pasta de Companheiro</button>`;
-        }
-
-        if (perfil.grau === "MM" || perfil.diretoria) {
-            html += `<button onclick="window.open('COLE_LINK_DO_DRIVE_MM_AQUI', '_blank')">Acessar Pasta de Mestre</button>`;
-        }
-
-        if (perfil.diretoria) {
-            html += `<button style="background: #fbc02d; color: #000;" onclick="window.open('COLE_LINK_DO_DRIVE_DIRETORIA_AQUI', '_blank')">Acessar Pasta da Diretoria</button>`;
-        }
-
+        html += `<button class="btn-sair" onclick="sair()">Sair da Conta</button>`;
         document.getElementById('conteudo-dinamico').innerHTML = html;
     }
 
+    async function sair() { await supabaseClient.auth.signOut(); window.location.href = "index.html"; }
     carregarPainel();
-
-    async function sair() {
-        await supabaseClient.auth.signOut();
-        window.location.href = "index.html";
-    }
 </script>
-
 </body>
 </html>
