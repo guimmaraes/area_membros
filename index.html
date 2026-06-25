@@ -61,16 +61,25 @@
         }
 
         // 3. Regra estrita de redirecionamento baseada no nível do usuário
+       // if (perfil.diretoria === true) {
+       //     window.location.href = "LINK_DO_GOOGLE_SITE_DIRETORIA";
+       // } else if (perfil.grau === "MM") {
+       //     window.location.href = "LINK_DO_GOOGLE_SITE_MESTRE";
+       // } else if (perfil.grau === "CM") {
+       //     window.location.href = "LINK_DO_GOOGLE_SITE_COMPANHEIRO";
+       // } else if (perfil.grau === "AM") {
+       //     window.location.href = "LINK_DO_GOOGLE_SITE_APRENDIZ";
+       // } else {
+       //     erroDiv.innerText = "Perfil sem nível de acesso configurado.";
+       // }
         if (perfil.diretoria === true) {
-            window.location.href = "LINK_DO_GOOGLE_SITE_DIRETORIA";
+            window.location.href = "https://www.google.com";
         } else if (perfil.grau === "MM") {
-            window.location.href = "LINK_DO_GOOGLE_SITE_MESTRE";
+            window.location.href = "https://www.wikipedia.org";
         } else if (perfil.grau === "CM") {
-            window.location.href = "LINK_DO_GOOGLE_SITE_COMPANHEIRO";
+            window.location.href = "https://www.youtube.com";
         } else if (perfil.grau === "AM") {
-            window.location.href = "LINK_DO_GOOGLE_SITE_APRENDIZ";
-        } else {
-            erroDiv.innerText = "Perfil sem nível de acesso configurado.";
+            window.location.href = "https://www.github.com";
         }
     }
 </script>
