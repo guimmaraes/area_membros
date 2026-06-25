@@ -17,6 +17,9 @@
         #area-lista-arquivos { width: 90%; text-align: left; margin: 20px 0; }
         .arquivo-item { background: #333; padding: 10px; margin: 5px 0; border-radius: 4px; cursor: pointer; display: block; width: 100%; text-align: left; }
         .arquivo-item:hover { background: #444; }
+        
+        /* Iframe oculto por padrão */
+        iframe { width: 90%; height: 80vh; border: none; border-radius: 8px; background: #fff; margin-top: 10px; display: none; }
     </style>
 </head>
 <body>
@@ -29,9 +32,11 @@
 <div id="area-visualizador">
     <button class="btn-voltar" onclick="voltar()">⬅ Voltar</button>
     <div id="area-lista-arquivos"></div>
+    <iframe id="iframe-drive" src=""></iframe>
 </div>
 
 <script>
+    // COLE SEU LINK DO APP SCRIPT AQUI DENTRO DAS ASPAS
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxiwEWyWjyX3Qlw_x1h5yjiRjVD19OSjs-O4jVeQi-EBMXiRb_TrecZ91OXfMA9X0OwnQ/exec";
     const SUPABASE_URL = "https://ssmjxusvrcspnmubyseb.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzbWp4dXN2cmNzcG5tdWJ5c2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNjA3NTgsImV4cCI6MjA5NzkzNjc1OH0.iEO1OQhx_emhYT_J_7bOYe3ypMqD_RWYvShKPQuRuzk";
@@ -66,10 +71,12 @@
         
         document.getElementById('menu-principal').style.display = 'none';
         document.getElementById('area-visualizador').style.display = 'flex';
+        document.getElementById('area-lista-arquivos').style.display = 'block';
+        document.getElementById('iframe-drive').style.display = 'none';
         document.getElementById('area-lista-arquivos').innerHTML = "Carregando arquivos...";
 
         try {
-            const response = await fetch(`${SCRIPT_URL}?id=${idDaPasta}&mode=list`);
+            const response = await fetch(`${SCRIPT_URL}?id=${idDaPasta}`);
             const arquivos = await response.json();
             mostrarLista(arquivos);
         } catch (error) {
@@ -82,15 +89,34 @@
         if (arquivos.length === 0) { html += "<p>Nenhum arquivo encontrado.</p>"; }
         
         arquivos.forEach(arq => {
-            html += `<button class="arquivo-item" onclick="alert('Teste PDF: ${arq.name}')">📄 ${arq.name}</button>`;
+            // Agora o botão chama a função abrirPDF passando o ID do arquivo
+            html += `<button class="arquivo-item" onclick="abrirPDF('${arq.id}')">📄 ${arq.name}</button>`;
         });
         
         document.getElementById('area-lista-arquivos').innerHTML = html;
     }
 
+    function abrirPDF(idDoArquivo) {
+        // Esconde a lista e mostra o iframe com o visualizador do Google Drive
+        document.getElementById('area-lista-arquivos').style.display = 'none';
+        const iframe = document.getElementById('iframe-drive');
+        iframe.src = `https://drive.google.com/file/d/${idDoArquivo}/preview`;
+        iframe.style.display = 'block';
+    }
+
     function voltar() {
-        document.getElementById('menu-principal').style.display = 'block';
-        document.getElementById('area-visualizador').style.display = 'none';
+        const iframe = document.getElementById('iframe-drive');
+        
+        // Se o iframe estiver visível, volta para a lista de arquivos
+        if (iframe.style.display === 'block') {
+            iframe.src = "";
+            iframe.style.display = 'none';
+            document.getElementById('area-lista-arquivos').style.display = 'block';
+        } else {
+            // Se a lista estiver visível, volta para o menu inicial
+            document.getElementById('menu-principal').style.display = 'block';
+            document.getElementById('area-visualizador').style.display = 'none';
+        }
     }
 
     async function sair() { await supabaseClient.auth.signOut(); window.location.href = "index.html"; }
