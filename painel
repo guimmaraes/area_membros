@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Área Restrita - Painel</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #121212; color: #fff; padding: 20px; text-align: center; }
+        .container { max-width: 600px; margin: 0 auto; background: #1e1e1e; padding: 30px; border-radius: 8px; }
+        button { width: 100%; padding: 15px; margin: 10px 0; background: #00bcd4; border: none; color: #fff; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 16px; }
+        button:hover { background: #0097a7; }
+        .btn-sair { background: #ff5252; margin-top: 30px; }
+        .btn-sair:hover { background: #d32f2f; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Painel de Membros</h2>
+    <div id="conteudo-dinamico">Carregando permissões...</div>
+    <button class="btn-sair" onclick="sair()">Sair da Conta</button>
+</div>
+
+<script>
+    const SUPABASE_URL = "https://ssmjxusvrcspnmubyseb.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzbWp4dXN2cmNzcG5tdWJ5c2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNjA3NTgsImV4cCI6MjA5NzkzNjc1OH0.iEO1OQhx_emhYT_J_7bOYe3ypMqD_RWYvShKPQuRuzk";
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    async function carregarPainel() {
+        // 1. Trava de Segurança: expulsa quem não tem sessão ativa
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) {
+            window.location.replace("index.html");
+            return;
+        }
+
+        // 2. Busca as permissões do usuário logado
+        const { data: perfil, error } = await supabaseClient
+            .from('perfis')
+            .select('grau, diretoria')
+            .eq('id', session.user.id)
+            .single();
+
+        if (error || !perfil) {
+            document.getElementById('conteudo-dinamico').innerHTML = "Erro ao carregar seu perfil.";
+            return;
+        }
+
+        let html = "";
+
+        // 3. Constrói a tela de cima para baixo
+        if (perfil.grau === "AM" || perfil.grau === "CM" || perfil.grau === "MM" || perfil.diretoria) {
+            html += `<button onclick="window.open('COLE_LINK_DO_DRIVE_AM_AQUI', '_blank')">Acessar Pasta de Aprendiz</button>`;
+        }
+        
+        if (perfil.grau === "CM" || perfil.grau === "MM" || perfil.diretoria) {
+            html += `<button onclick="window.open('COLE_LINK_DO_DRIVE_CM_AQUI', '_blank')">Acessar Pasta de Companheiro</button>`;
+        }
+
+        if (perfil.grau === "MM" || perfil.diretoria) {
+            html += `<button onclick="window.open('COLE_LINK_DO_DRIVE_MM_AQUI', '_blank')">Acessar Pasta de Mestre</button>`;
+        }
+
+        if (perfil.diretoria) {
+            html += `<button style="background: #fbc02d; color: #000;" onclick="window.open('COLE_LINK_DO_DRIVE_DIRETORIA_AQUI', '_blank')">Acessar Pasta da Diretoria</button>`;
+        }
+
+        document.getElementById('conteudo-dinamico').innerHTML = html;
+    }
+
+    carregarPainel();
+
+    async function sair() {
+        await supabaseClient.auth.signOut();
+        window.location.href = "index.html";
+    }
+</script>
+
+</body>
+</html>
