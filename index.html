@@ -29,7 +29,8 @@
     const SUPABASE_URL = "https://ssmjxusvrcspnmubyseb.supabase.co/rest/v1/";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzbWp4dXN2cmNzcG5tdWJ5c2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNjA3NTgsImV4cCI6MjA5NzkzNjc1OH0.iEO1OQhx_emhYT_J_7bOYe3ypMqD_RWYvShKPQuRuzk";
 
-    const supabase = Supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // CORREÇÃO AQUI: supabase em minúsculo e variável supabaseClient
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     async function fazerLogin() {
         const email = document.getElementById('email').value;
@@ -37,8 +38,8 @@
         const erroDiv = document.getElementById('mensagem-erro');
         erroDiv.innerText = "";
 
-        // 1. Autentica o usuário no módulo Auth do Supabase
-        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        // 1. Autentica o usuário
+        const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
             email: email,
             password: password,
         });
@@ -48,8 +49,8 @@
             return;
         }
 
-        // 2. Busca os dados de permissões na nossa tabela 'perfis' usando o ID autenticado
-        const { data: perfil, error: perfilError } = await supabase
+        // 2. Busca o perfil
+        const { data: perfil, error: perfilError } = await supabaseClient
             .from('perfis')
             .select('grau, diretoria')
             .eq('id', authData.user.id)
@@ -60,18 +61,7 @@
             return;
         }
 
-        // 3. Regra estrita de redirecionamento baseada no nível do usuário
-       // if (perfil.diretoria === true) {
-       //     window.location.href = "LINK_DO_GOOGLE_SITE_DIRETORIA";
-       // } else if (perfil.grau === "MM") {
-       //     window.location.href = "LINK_DO_GOOGLE_SITE_MESTRE";
-       // } else if (perfil.grau === "CM") {
-       //     window.location.href = "LINK_DO_GOOGLE_SITE_COMPANHEIRO";
-       // } else if (perfil.grau === "AM") {
-       //     window.location.href = "LINK_DO_GOOGLE_SITE_APRENDIZ";
-       // } else {
-       //     erroDiv.innerText = "Perfil sem nível de acesso configurado.";
-       // }
+        // 3. Redireciona (links temporários para teste)
         if (perfil.diretoria === true) {
             window.location.href = "https://www.google.com";
         } else if (perfil.grau === "MM") {
@@ -80,6 +70,8 @@
             window.location.href = "https://www.youtube.com";
         } else if (perfil.grau === "AM") {
             window.location.href = "https://www.github.com";
+        } else {
+            erroDiv.innerText = "Perfil sem nível de acesso configurado.";
         }
     }
 </script>
