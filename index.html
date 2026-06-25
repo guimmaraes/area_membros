@@ -62,14 +62,8 @@
         }
 
         // 3. Redireciona (links temporários para teste)
-        if (perfil.diretoria === true) {
-            window.location.href = "https://www.google.com";
-        } else if (perfil.grau === "MM") {
-            window.location.href = "https://www.wikipedia.org";
-        } else if (perfil.grau === "CM") {
-            window.location.href = "https://www.youtube.com";
-        } else if (perfil.grau === "AM") {
-            window.location.href = "https://www.github.com";
+       if (perfil.grau === "MM" || perfil.grau === "CM" || perfil.grau === "AM" || perfil.diretoria === true) {
+            window.location.href = "painel.html";
         } else {
             erroDiv.innerText = "Perfil sem nível de acesso configurado.";
         }
