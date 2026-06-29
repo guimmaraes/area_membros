@@ -59,7 +59,7 @@
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwLf6erORInbn-B3HgJ5QTaYfhoDq5eIpdXbumQPbY7WGzL1HQ1mW6JPxgGcW0sdGTosA/exec";
+    const SCRIPT_URL = "COLE_AQUI_SEU_LINK_DO_APP_SCRIPT";
     const SUPABASE_URL = "https://ssmjxusvrcspnmubyseb.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzbWp4dXN2cmNzcG5tdWJ5c2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNjA3NTgsImV4cCI6MjA5NzkzNjc1OH0.iEO1OQhx_emhYT_J_7bOYe3ypMqD_RWYvShKPQuRuzk";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -118,10 +118,23 @@
         try {
             const response = await fetch(`${SCRIPT_URL}?id=${idDaPasta}`);
             const arquivos = await response.json();
-            let html = `<h3>Arquivos</h3>`;
-            arquivos.forEach(arq => { html += `<button class="arquivo-item" onclick="abrirPDF('${arq.id}')">📄 ${arq.name}</button>`; });
-            document.getElementById('area-lista-arquivos').innerHTML = html;
+            mostrarLista(arquivos);
         } catch (e) { document.getElementById('area-lista-arquivos').innerHTML = "Erro ao buscar."; }
+    }
+
+    function mostrarLista(arquivos) {
+        let html = `<h3>Arquivos</h3>`;
+        if (arquivos.length === 0) { html += "<p>Nenhum arquivo encontrado.</p>"; }
+        
+        arquivos.forEach(arq => {
+            html += `
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <button class="arquivo-item" style="flex-grow: 1;" onclick="abrirPDF('${arq.id}')">📄 ${arq.name}</button>
+                    <a href="https://drive.google.com/uc?export=download&id=${arq.id}" style="background: #4caf50; color: white; padding: 10px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer;">BAIXAR</a>
+                </div>`;
+        });
+        
+        document.getElementById('area-lista-arquivos').innerHTML = html;
     }
 
     function abrirPDF(idDoArquivo) {
