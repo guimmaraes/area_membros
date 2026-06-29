@@ -9,6 +9,7 @@
         .container { background: #1e1e1e; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); width: 300px; text-align: center; margin-top: 50px; }
         button { width: 100%; padding: 12px; margin: 8px 0; border: none; color: #fff; font-weight: bold; border-radius: 4px; cursor: pointer; }
         .btn-acao { background: #00bcd4; }
+        .btn-calendario-geral { background: #9c27b0; }
         .btn-calendario { background: #4CAF50; }
         .btn-diretoria { background: #fbc02d; color: #000; }
         .btn-sair { background: #ff5252; margin-top: 20px; }
@@ -49,7 +50,8 @@
     <div style="width: 90%; max-width: 800px; margin-top: 20px;">
         <div style="position: relative; width: 100%; padding-bottom: 75%; height: 0; overflow: hidden;">
             <iframe 
-                src="https://calendar.google.com/calendar/embed?src=b7b7dcb4b0b20cf0c35e229e3664fd0967ddba530bbaa1931be3bc36735ecb0e%40group.calendar.google.com&ctz=America%2FSao_Paulo" 
+                id="iframe-calendario"
+                src="" 
                 style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" 
                 frameborder="0" 
                 scrolling="no">
@@ -65,29 +67,18 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     async function carregarPainel() {
-        console.log("1. Iniciando script do painel...");
-        
         const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session) { 
-            console.log("Sessão não encontrada. Redirecionando...");
-            window.location.replace("index.html"); 
-            return; 
-        }
-        console.log("2. Usuário autenticado encontrado.");
+        if (!session) { window.location.replace("index.html"); return; }
 
         try {
-            console.log("3. Buscando perfil do usuário...");
             const { data: perfil, error: erroPerfil } = await supabaseClient.from('perfis').select('grau, diretoria').eq('id', session.user.id).single();
-            console.log("4. Resposta do Perfil: ", perfil, erroPerfil);
             
             if (erroPerfil || !perfil || !perfil.grau) {
                 document.getElementById('conteudo-dinamico').innerHTML = "<p style='color: #ff5252;'>Erro: Seu cadastro está incompleto ou não foi encontrado no banco de dados.</p><button class='btn-sair' onclick='sair()'>Sair</button>";
                 return;
             }
 
-            console.log("5. Buscando links das pastas...");
-            const { data: configs, error: erroConfig } = await supabaseClient.from('configuracoes').select('grau, link');
-            console.log("6. Resposta das Configurações: ", configs, erroConfig);
+            const { data: configs } = await supabaseClient.from('configuracoes').select('grau, link');
 
             let html = "";
             const getId = (grau) => configs?.find(c => c.grau === grau)?.link || "";
@@ -99,8 +90,12 @@
             if (["MM", "MI"].includes(perfil.grau)) 
                 html += `<button class="btn-acao" onclick="abrirPasta('${getId('MM')}')">Acessar Mestre</button>`;
             
+            // Botão do Calendário Geral (Para todos)
+            html += `<button class="btn-calendario-geral" onclick="abrirCalendario('geral')">📅 Calendário Geral</button>`;
+
+            // Botão do Calendário Ordens (Restrito)
             if (["MM", "MI"].includes(perfil.grau) || perfil.diretoria) {
-                html += `<button class="btn-calendario" onclick="abrirCalendario()">Calendário Ordens de Aperfeiçoamento</button>`;
+                html += `<button class="btn-calendario" onclick="abrirCalendario('ordens')">📅 Calendário Ordens de Aperfeiçoamento</button>`;
             }
 
             if (perfil.diretoria) {
@@ -108,13 +103,9 @@
             }
             
             html += `<button class="btn-sair" onclick="sair()">Sair da Conta</button>`;
-            
-            console.log("7. Desenhando os botões na tela...");
             document.getElementById('conteudo-dinamico').innerHTML = html;
-            console.log("8. Concluído com sucesso!");
 
         } catch (erroGeral) {
-            console.error("ERRO GRAVE CAPTURADO: ", erroGeral);
             document.getElementById('conteudo-dinamico').innerHTML = "<p style='color: #ff5252;'>Erro inesperado ao carregar as informações.</p><button class='btn-sair' onclick='sair()'>Sair</button>";
         }
     }
@@ -157,21 +148,31 @@
         wrapper.style.display = 'block';
     }
 
-    function abrirCalendario() {
+    function abrirCalendario(tipo) {
         document.getElementById('menu-principal').style.display = 'none';
         document.getElementById('area-visualizador').style.display = 'none';
         document.getElementById('area-calendario').style.display = 'flex';
+        
+        const iframeCalendario = document.getElementById('iframe-calendario');
+        
+        if (tipo === 'geral') {
+            iframeCalendario.src = "https://calendar.google.com/calendar/embed?src=70e37ae772e281bf1af896e6af95bd6c01b717b9cf096607ebeb248e5232ad9b%40group.calendar.google.com&ctz=America%2FSao_Paulo";
+        } else if (tipo === 'ordens') {
+            iframeCalendario.src = "https://calendar.google.com/calendar/embed?src=b7b7dcb4b0b20cf0c35e229e3664fd0967ddba530bbaa1931be3bc36735ecb0e%40group.calendar.google.com&ctz=America%2FSao_Paulo";
+        }
     }
 
     function voltar() {
         const wrapper = document.getElementById('wrapper-iframe');
         const iframe = document.getElementById('iframe-drive');
+        const iframeCalendario = document.getElementById('iframe-calendario');
         
         if (wrapper && wrapper.style.display === 'block') {
             iframe.src = "";
             wrapper.style.display = 'none';
             document.getElementById('area-lista-arquivos').style.display = 'block';
         } else {
+            iframeCalendario.src = ""; // Limpa o calendário ao voltar para não consumir memória
             document.getElementById('menu-principal').style.display = 'block';
             document.getElementById('area-visualizador').style.display = 'none';
             document.getElementById('area-calendario').style.display = 'none';
