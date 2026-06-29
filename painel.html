@@ -9,18 +9,19 @@
         .container { background: #1e1e1e; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); width: 300px; text-align: center; margin-top: 50px; }
         button { width: 100%; padding: 12px; margin: 8px 0; border: none; color: #fff; font-weight: bold; border-radius: 4px; cursor: pointer; }
         .btn-acao { background: #00bcd4; }
+        .btn-calendario { background: #4CAF50; }
         .btn-diretoria { background: #fbc02d; color: #000; }
         .btn-sair { background: #ff5252; margin-top: 20px; }
         .btn-voltar { background: #757575; width: auto; padding: 10px 20px; margin: 10px; }
         
-        #area-visualizador { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; }
+        #area-visualizador, #area-calendario { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; }
         #area-lista-arquivos { width: 90%; text-align: left; margin: 20px 0; }
         .arquivo-item { background: #333; padding: 10px; margin: 5px 0; border-radius: 4px; cursor: pointer; display: block; width: 100%; text-align: left; }
         .arquivo-item:hover { background: #444; }
         
         /* Container do iframe para controle da máscara */
         .iframe-container { position: relative; width: 90%; height: 80vh; margin-top: 10px; display: none; }
-        iframe { width: 100%; height: 100%; border: none; border-radius: 8px; background: #fff; }
+        .iframe-drive { width: 100%; height: 100%; border: none; border-radius: 8px; background: #fff; }
         
         /* Máscara que cobre o botão superior direito do Google Drive */
         .mascara-seta { position: absolute; top: 0; right: 0; width: 65px; height: 55px; background-color: #121212; z-index: 999; border-top-right-radius: 8px; pointer-events: auto; }
@@ -39,12 +40,26 @@
     
     <div id="wrapper-iframe" class="iframe-container">
         <div class="mascara-seta"></div>
-        <iframe id="iframe-drive" src=""></iframe>
+        <iframe id="iframe-drive" class="iframe-drive" src=""></iframe>
+    </div>
+</div>
+
+<div id="area-calendario">
+    <button class="btn-voltar" onclick="voltar()">⬅ Voltar</button>
+    <div style="width: 90%; max-width: 800px; margin-top: 20px;">
+        <div style="position: relative; width: 100%; padding-bottom: 75%; height: 0; overflow: hidden;">
+            <iframe 
+                src="https://calendar.google.com/calendar/embed?src=b7b7dcb4b0b20cf0c35e229e3664fd0967ddba530bbaa1931be3bc36735ecb0e%40group.calendar.google.com&ctz=America%2FSao_Paulo" 
+                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" 
+                frameborder="0" 
+                scrolling="no">
+            </iframe>
+        </div>
     </div>
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxiwEWyWjyX3Qlw_x1h5yjiRjVD19OSjs-O4jVeQi-EBMXiRb_TrecZ91OXfMA9X0OwnQ/exec";
+    const SCRIPT_URL = "COLE_AQUI_SEU_LINK_DO_APP_SCRIPT";
     const SUPABASE_URL = "https://ssmjxusvrcspnmubyseb.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzbWp4dXN2cmNzcG5tdWJ5c2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNjA3NTgsImV4cCI6MjA5NzkzNjc1OH0.iEO1OQhx_emhYT_J_7bOYe3ypMqD_RWYvShKPQuRuzk";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -65,6 +80,12 @@
             html += `<button class="btn-acao" onclick="abrirPasta('${getId('CM')}')">Acessar Companheiro</button>`;
         if (["MM", "MI"].includes(perfil.grau)) 
             html += `<button class="btn-acao" onclick="abrirPasta('${getId('MM')}')">Acessar Mestre</button>`;
+        
+        // Novo Botão do Calendário exclusivo para MM, MI ou Diretoria
+        if (["MM", "MI"].includes(perfil.grau) || perfil.diretoria) {
+            html += `<button class="btn-calendario" onclick="abrirCalendario()">Calendário Ordens de Aperfeiçoamento</button>`;
+        }
+
         if (perfil.diretoria) {
             html += `<button class="btn-diretoria" onclick="abrirPasta('${getId('DIRETORIA')}')">Área da Diretoria</button>`;
         }
@@ -78,6 +99,7 @@
         
         document.getElementById('menu-principal').style.display = 'none';
         document.getElementById('area-visualizador').style.display = 'flex';
+        document.getElementById('area-calendario').style.display = 'none';
         document.getElementById('area-lista-arquivos').style.display = 'block';
         document.getElementById('wrapper-iframe').style.display = 'none';
         document.getElementById('area-lista-arquivos').innerHTML = "Carregando arquivos...";
@@ -91,42 +113,4 @@
         }
     }
 
-    function mostrarLista(arquivos) {
-        let html = `<h3>Arquivos da Pasta</h3>`;
-        if (arquivos.length === 0) { html += "<p>Nenhum arquivo encontrado.</p>"; }
-        
-        arquivos.forEach(arq => {
-            html += `<button class="arquivo-item" onclick="abrirPDF('${arq.id}')">📄 ${arq.name}</button>`;
-        });
-        
-        document.getElementById('area-lista-arquivos').innerHTML = html;
-    }
-
-    function abrirPDF(idDoArquivo) {
-        document.getElementById('area-lista-arquivos').style.display = 'none';
-        const wrapper = document.getElementById('wrapper-iframe');
-        const iframe = document.getElementById('iframe-drive');
-        iframe.src = `https://drive.google.com/file/d/${idDoArquivo}/preview`;
-        wrapper.style.display = 'block';
-    }
-
-    function voltar() {
-        const wrapper = document.getElementById('wrapper-iframe');
-        const iframe = document.getElementById('iframe-drive');
-        
-        if (wrapper.style.display === 'block') {
-            iframe.src = "";
-            wrapper.style.display = 'none';
-            document.getElementById('area-lista-arquivos').style.display = 'block';
-        } else {
-            document.getElementById('menu-principal').style.display = 'block';
-            document.getElementById('area-visualizador').style.display = 'none';
-        }
-    }
-
-    async function sair() { await supabaseClient.auth.signOut(); window.location.href = "index.html"; }
-    
-    carregarPainel();
-</script>
-</body>
-</html>
+    function mostrar
