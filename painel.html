@@ -102,6 +102,7 @@
             // Botão do Calendário Ordens (Restrito)
             if (["MM", "MI"].includes(perfil.grau) || perfil.diretoria) {
                 html += `<button class="btn-calendario" onclick="abrirCalendario('CAL_ORDENS')">📅 Calendário Ordens de Aperfeiçoamento</button>`;
+                html += `<button class="btn-acao" style="background: #ff9800;" onclick="window.open('https://1drv.ms/f/c/ddff6b1661f394aa/IgBQjHISn1XjTK8q2zsgf5zqAVS-V0-Ncpbmf7BCBzmIwU0?e=QByTsp', '_blank')">⬇️ Downloads</button>`;
             }
 
             if (perfil.diretoria) {
