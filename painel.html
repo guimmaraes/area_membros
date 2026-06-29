@@ -65,33 +65,58 @@
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     async function carregarPainel() {
+        console.log("1. Iniciando script do painel...");
+        
         const { data: { session } } = await supabaseClient.auth.getSession();
-        if (!session) { window.location.replace("index.html"); return; }
-
-        const { data: perfil } = await supabaseClient.from('perfis').select('grau, diretoria').eq('id', session.user.id).single();
-        const { data: configs } = await supabaseClient.from('configuracoes').select('grau, link');
-
-        let html = "";
-        const getId = (grau) => configs.find(c => c.grau === grau)?.link || "";
-
-        if (["AM", "CM", "MM", "MI"].includes(perfil.grau)) 
-            html += `<button class="btn-acao" onclick="abrirPasta('${getId('AM')}')">Acessar Aprendiz</button>`;
-        if (["CM", "MM", "MI"].includes(perfil.grau)) 
-            html += `<button class="btn-acao" onclick="abrirPasta('${getId('CM')}')">Acessar Companheiro</button>`;
-        if (["MM", "MI"].includes(perfil.grau)) 
-            html += `<button class="btn-acao" onclick="abrirPasta('${getId('MM')}')">Acessar Mestre</button>`;
-        
-        // Novo Botão do Calendário exclusivo para MM, MI ou Diretoria
-        if (["MM", "MI"].includes(perfil.grau) || perfil.diretoria) {
-            html += `<button class="btn-calendario" onclick="abrirCalendario()">Calendário Ordens de Aperfeiçoamento</button>`;
+        if (!session) { 
+            console.log("Sessão não encontrada. Redirecionando...");
+            window.location.replace("index.html"); 
+            return; 
         }
+        console.log("2. Usuário autenticado encontrado.");
 
-        if (perfil.diretoria) {
-            html += `<button class="btn-diretoria" onclick="abrirPasta('${getId('DIRETORIA')}')">Área da Diretoria</button>`;
+        try {
+            console.log("3. Buscando perfil do usuário...");
+            const { data: perfil, error: erroPerfil } = await supabaseClient.from('perfis').select('grau, diretoria').eq('id', session.user.id).single();
+            console.log("4. Resposta do Perfil: ", perfil, erroPerfil);
+            
+            if (erroPerfil || !perfil || !perfil.grau) {
+                document.getElementById('conteudo-dinamico').innerHTML = "<p style='color: #ff5252;'>Erro: Seu cadastro está incompleto ou não foi encontrado no banco de dados.</p><button class='btn-sair' onclick='sair()'>Sair</button>";
+                return;
+            }
+
+            console.log("5. Buscando links das pastas...");
+            const { data: configs, error: erroConfig } = await supabaseClient.from('configuracoes').select('grau, link');
+            console.log("6. Resposta das Configurações: ", configs, erroConfig);
+
+            let html = "";
+            const getId = (grau) => configs?.find(c => c.grau === grau)?.link || "";
+
+            if (["AM", "CM", "MM", "MI"].includes(perfil.grau)) 
+                html += `<button class="btn-acao" onclick="abrirPasta('${getId('AM')}')">Acessar Aprendiz</button>`;
+            if (["CM", "MM", "MI"].includes(perfil.grau)) 
+                html += `<button class="btn-acao" onclick="abrirPasta('${getId('CM')}')">Acessar Companheiro</button>`;
+            if (["MM", "MI"].includes(perfil.grau)) 
+                html += `<button class="btn-acao" onclick="abrirPasta('${getId('MM')}')">Acessar Mestre</button>`;
+            
+            if (["MM", "MI"].includes(perfil.grau) || perfil.diretoria) {
+                html += `<button class="btn-calendario" onclick="abrirCalendario()">Calendário Ordens de Aperfeiçoamento</button>`;
+            }
+
+            if (perfil.diretoria) {
+                html += `<button class="btn-diretoria" onclick="abrirPasta('${getId('DIRETORIA')}')">Área da Diretoria</button>`;
+            }
+            
+            html += `<button class="btn-sair" onclick="sair()">Sair da Conta</button>`;
+            
+            console.log("7. Desenhando os botões na tela...");
+            document.getElementById('conteudo-dinamico').innerHTML = html;
+            console.log("8. Concluído com sucesso!");
+
+        } catch (erroGeral) {
+            console.error("ERRO GRAVE CAPTURADO: ", erroGeral);
+            document.getElementById('conteudo-dinamico').innerHTML = "<p style='color: #ff5252;'>Erro inesperado ao carregar as informações.</p><button class='btn-sair' onclick='sair()'>Sair</button>";
         }
-        
-        html += `<button class="btn-sair" onclick="sair()">Sair da Conta</button>`;
-        document.getElementById('conteudo-dinamico').innerHTML = html;
     }
 
     async function abrirPasta(idDaPasta) {
@@ -113,4 +138,49 @@
         }
     }
 
-    function mostrar
+    function mostrarLista(arquivos) {
+        let html = `<h3>Arquivos da Pasta</h3>`;
+        if (arquivos.length === 0) { html += "<p>Nenhum arquivo encontrado.</p>"; }
+        
+        arquivos.forEach(arq => {
+            html += `<button class="arquivo-item" onclick="abrirPDF('${arq.id}')">📄 ${arq.name}</button>`;
+        });
+        
+        document.getElementById('area-lista-arquivos').innerHTML = html;
+    }
+
+    function abrirPDF(idDoArquivo) {
+        document.getElementById('area-lista-arquivos').style.display = 'none';
+        const wrapper = document.getElementById('wrapper-iframe');
+        const iframe = document.getElementById('iframe-drive');
+        iframe.src = `https://drive.google.com/file/d/${idDoArquivo}/preview`;
+        wrapper.style.display = 'block';
+    }
+
+    function abrirCalendario() {
+        document.getElementById('menu-principal').style.display = 'none';
+        document.getElementById('area-visualizador').style.display = 'none';
+        document.getElementById('area-calendario').style.display = 'flex';
+    }
+
+    function voltar() {
+        const wrapper = document.getElementById('wrapper-iframe');
+        const iframe = document.getElementById('iframe-drive');
+        
+        if (wrapper && wrapper.style.display === 'block') {
+            iframe.src = "";
+            wrapper.style.display = 'none';
+            document.getElementById('area-lista-arquivos').style.display = 'block';
+        } else {
+            document.getElementById('menu-principal').style.display = 'block';
+            document.getElementById('area-visualizador').style.display = 'none';
+            document.getElementById('area-calendario').style.display = 'none';
+        }
+    }
+
+    async function sair() { await supabaseClient.auth.signOut(); window.location.href = "index.html"; }
+    
+    carregarPainel();
+</script>
+</body>
+</html>
