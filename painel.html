@@ -71,7 +71,20 @@
         if (!session) { window.location.replace("index.html"); return; }
 
         try {
-            const { data: perfil, error: erroPerfil } = await supabaseClient.from('perfis').select('grau, diretoria').eq('id', session.user.id).single();
+            // Mudamos de .single() para uma busca padrão por lista para evitar o erro 406
+            const { data: perfis, error: erroPerfil } = await supabaseClient
+                .from('perfis')
+                .select('grau, diretoria')
+                .eq('id', session.user.id);
+
+            if (erroPerfil || !perfis || perfis.length === 0) {
+                console.error("Erro detalhado do perfil:", erroPerfil);
+                document.getElementById('conteudo-dinamico').innerHTML = "<p style='color: #ff5252;'>Erro ao carregar permissões do perfil.</p><button class='btn-sair' onclick='sair()'>Sair</button>";
+                return;
+            }
+
+            // Pega o primeiro perfil encontrado
+            const perfil = perfis[0];
             const { data: configs } = await supabaseClient.from('configuracoes').select('grau, link');
             
             linksMap = {};
@@ -103,7 +116,6 @@
         } catch (erroGeral) {
             document.getElementById('conteudo-dinamico').innerHTML = "<p style='color: #ff5252;'>Erro ao carregar painel.</p><button class='btn-sair' onclick='sair()'>Sair</button>";
         }
-    }
 
     async function abrirPasta(idDaPasta) {
         if(!idDaPasta) { alert("ID não configurado no banco."); return; }
