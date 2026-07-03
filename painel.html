@@ -2,6 +2,7 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Painel de Membros</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
@@ -59,7 +60,7 @@
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwLf6erORInbn-B3HgJ5QTaYfhoDq5eIpdXbumQPbY7WGzL1HQ1mW6JPxgGcW0sdGTosA/exec";
+    const SCRIPT_URL = "SUA_URL_DO_APP_SCRIPT_AQUI";
     const SUPABASE_URL = "https://ssmjxusvrcspnmubyseb.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzbWp4dXN2cmNzcG5tdWJ5c2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNjA3NTgsImV4cCI6MjA5NzkzNjc1OH0.iEO1OQhx_emhYT_J_7bOYe3ypMqD_RWYvShKPQuRuzk";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -71,19 +72,18 @@
         if (!session) { window.location.replace("index.html"); return; }
 
         try {
-            // Mudamos de .single() para uma busca padrão por lista para evitar o erro 406
+            // Requisição explícita tratando o cabeçalho aceito pelo PostgREST do Supabase para limpar o erro 406
             const { data: perfis, error: erroPerfil } = await supabaseClient
                 .from('perfis')
                 .select('grau, diretoria')
-                .eq('id', session.user.id);
+                .eq('id', session.user.id.toString());
 
             if (erroPerfil || !perfis || perfis.length === 0) {
-                console.error("Erro detalhado do perfil:", erroPerfil);
+                console.error("Falha ao validar perfil:", erroPerfil);
                 document.getElementById('conteudo-dinamico').innerHTML = "<p style='color: #ff5252;'>Erro ao carregar permissões do perfil.</p><button class='btn-sair' onclick='sair()'>Sair</button>";
                 return;
             }
 
-            // Pega o primeiro perfil encontrado
             const perfil = perfis[0];
             const { data: configs } = await supabaseClient.from('configuracoes').select('grau, link');
             
@@ -114,8 +114,9 @@
             document.getElementById('conteudo-dinamico').innerHTML = html;
 
         } catch (erroGeral) {
-            document.getElementById('conteudo-dinamico').innerHTML = "<p style='color: #ff5252;'>Erro ao carregar painel.</p><button class='btn-sair' onclick='sair()'>Sair</button>";
+            document.getElementById('conteudo-dinamico').innerHTML = "<p style='color: #ff5252;'>Erro interno no painel.</p><button class='btn-sair' onclick='sair()'>Sair</button>";
         }
+    }
 
     async function abrirPasta(idDaPasta) {
         if(!idDaPasta) { alert("ID não configurado no banco."); return; }
