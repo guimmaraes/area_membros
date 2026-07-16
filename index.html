@@ -21,11 +21,11 @@
     <input type="email" id="email" placeholder="E-mail" required>
     <input type="password" id="password" placeholder="Senha" required>
     
-    <!-- Bloco da LGPD atualizado com "span" para evitar conflito de aspas -->
+    <!-- Bloco da LGPD com chamada direta de função -->
     <div style="text-align: left; margin: 15px 0; font-size: 11px; color: #bbb; display: flex; align-items: flex-start; gap: 8px;">
         <input type="checkbox" id="aceite-lgpd" style="margin-top: 3px; cursor: pointer;" required>
         <label for="aceite-lgpd" style="cursor: pointer; line-height: 1.4;">
-            Li e aceito os <span id="link-privacidade" style="color: #00bcd4; text-decoration: underline; cursor: pointer;">Termos de Uso e Privacidade</span>.
+            Li e aceito os <span onclick="mostrarTermos()" style="color: #00bcd4; text-decoration: underline; cursor: pointer;">Termos de Uso e Privacidade</span>.
         </label>
     </div>
 
@@ -41,10 +41,10 @@
     // Instanciação do cliente
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Gerenciador do clique do link de Privacidade sem quebrar strings HTML
-    document.getElementById('link-privacidade').addEventListener('click', function() {
-        alert('Ao acessar, você autoriza o uso de seus dados (Nome, E-mail, CIM e Grau) exclusivamente para controle de acesso ao painel, armazenamento seguro no Supabase e listagem de arquivos, conforme a LGPD.');
-    });
+    // Função isolada para o termo da LGPD (não quebra o carregamento)
+    function mostrarTermos() {
+        alert("Ao acessar, você autoriza o uso de seus dados (Nome, E-mail, CIM e Grau) exclusivamente para controle de acesso ao painel, armazenamento seguro no Supabase e listagem de arquivos, conforme a LGPD.");
+    }
 
     async function fazerLogin() {
         // Verifica se o usuário aceitou os termos da LGPD
