@@ -106,7 +106,7 @@
             if (["MM", "MI"].includes(perfil.grau)) 
                 html += `<button class="btn-acao" onclick="abrirPasta('${linksMap['MM'] || ''}')">Acessar Mestre</button>`;
 
-            html += `<button class="btn-downloads" onclick="abrirPasta('${linksMap['DOWNLOADS'] || ''}')">⬇️ Downloads</button>`;
+           // html += `<button class="btn-downloads" onclick="abrirPasta('${linksMap['DOWNLOADS'] || ''}')">⬇️ Downloads</button>`;
             html += `<button class="btn-calendario-geral" onclick="abrirCalendario('CAL_GERAL')">📅 Calendário Geral</button>`;
 
             if (["MM", "MI"].includes(perfil.grau) || perfil.diretoria) {
