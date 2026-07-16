@@ -3,15 +3,15 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Área Restrita - Login</title>
+    <title>Acesso Restrito</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         body { font-family: Arial, sans-serif; background-color: #121212; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
         .login-container { background: #1e1e1e; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); width: 300px; text-align: center; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #333; background: #2a2a2a; color: #fff; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #00bcd4; border: none; color: #fff; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        input { width: 90%; padding: 10px; margin: 10px 0; border-radius: 4px; border: 1px solid #333; background: #222; color: #fff; }
+        button { width: 100%; padding: 12px; margin-top: 15px; border: none; background: #00bcd4; color: #fff; font-weight: bold; border-radius: 4px; cursor: pointer; }
         button:hover { background: #0097a7; }
-        .error { color: #ff5252; margin-top: 10px; font-size: 14px; }
+        .error { color: #ff5252; margin-top: 15px; font-size: 14px; }
     </style>
 </head>
 <body>
@@ -55,7 +55,7 @@
 
     async function fazerLogin() {
         const erroDiv = document.getElementById('mensagem-erro');
-        erroDiv.innerText = "Conectando..."; // Dá um retorno visual ao clicar
+        erroDiv.innerText = "Conectando..."; 
 
         const aceitou = document.getElementById('aceite-lgpd').checked;
         if (!aceitou) {
@@ -67,7 +67,6 @@
         const password = document.getElementById('password').value;
 
         try {
-            // 1. Autentica o usuário
             const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
                 email: email,
                 password: password,
@@ -75,7 +74,6 @@
 
             if (authError) throw authError;
 
-            // 2. Busca o perfil
             const { data: perfil, error: perfilError } = await supabaseClient
                 .from('perfis')
                 .select('grau, diretoria')
@@ -84,7 +82,6 @@
 
             if (perfilError || !perfil) throw new Error("Erro ao carregar permissões do perfil.");
 
-            // 3. Registra o aceite da LGPD
             const { error: updateError } = await supabaseClient
                 .from('perfis')
                 .update({ aceite_lgpd: true })
@@ -92,7 +89,6 @@
 
             if (updateError) throw new Error("Falha ao registrar o aceite da LGPD.");
 
-            // 4. Redireciona
             if (perfil.grau === "MM" || perfil.grau === "CM" || perfil.grau === "AM" || perfil.diretoria === true) {
                 window.location.href = "painel.html";
             } else {
@@ -100,9 +96,10 @@
             }
 
         } catch (err) {
-            // Captura qualquer queda de rede ou erro do Supabase e mostra na tela
             console.error(err);
-            erroDiv.innerText = err.message || "Erro de rede. Desative seu AdBlocker ou verifique sua conexão.";
+            erroDiv.innerText = err.message || "Erro de rede. Verifique sua conexão.";
         }
     }
 </script>
+</body>
+</html>
