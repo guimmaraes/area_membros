@@ -41,43 +41,47 @@
     // CORREÇÃO AQUI: supabase em minúsculo e variável supabaseClient
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    async function fazerLogin() {
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-        const erroDiv = document.getElementById('mensagem-erro');
-        erroDiv.innerText = "";
-
-        // 1. Autentica o usuário
-        const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
-            email: email,
-            password: password,
-        });
-
-        if (authError) {
-            erroDiv.innerText = "Usuário ou senha incorretos.";
-            return;
-        }
-
-        // 2. Busca o perfil
-        const { data: perfil, error: perfilError } = await supabaseClient
-            .from('perfis')
-            .select('grau, diretoria')
-            .eq('id', authData.user.id)
-            .single();
-
-        if (perfilError || !perfil) {
-            erroDiv.innerText = "Erro ao carregar permissões do perfil.";
-            return;
-        }
-
-        // 3. Redireciona (links temporários para teste)
-       if (perfil.grau === "MM" || perfil.grau === "CM" || perfil.grau === "AM" || perfil.diretoria === true) {
-            window.location.href = "painel.html";
-        } else {
-            erroDiv.innerText = "Perfil sem nível de acesso configurado.";
-        }
+   async function fazerLogin() {
+    // Verifica se o usuário aceitou os termos da LGPD
+    const aceitou = document.getElementById('aceite-lgpd').checked;
+    if (!aceitou) {
+        alert("Você precisa aceitar os Termos de Uso e Privacidade para acessar a área restrita.");
+        return;
     }
-</script>
 
-</body>
-</html>
+    // Declaração das variáveis do formulário
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const erroDiv = document.getElementById('mensagem-erro');
+    erroDiv.innerText = "";
+
+    // 1. Autentica o usuário
+    const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+        email: email,
+        password: password,
+    });
+
+    if (authError) {
+        erroDiv.innerText = "Usuário ou senha incorretos.";
+        return;
+    }
+
+    // 2. Busca o perfil
+    const { data: perfil, error: perfilError } = await supabaseClient
+        .from('perfis')
+        .select('grau, diretoria')
+        .eq('id', authData.user.id)
+        .single();
+
+    if (perfilError || !perfil) {
+        erroDiv.innerText = "Erro ao carregar permissões do perfil.";
+        return;
+    }
+
+    // 3. Redireciona
+    if (perfil.grau === "MM" || perfil.grau === "CM" || perfil.grau === "AM" || perfil.diretoria === true) {
+        window.location.href = "painel.html";
+    } else {
+        erroDiv.innerText = "Perfil sem nível de acesso configurado.";
+    }
+}
