@@ -3,37 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Acesso Restrito</title>
+    <title>Painel de Membros</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        body { font-family: Arial, sans-serif; background-color: #121212; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-container { background: #1e1e1e; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); width: 300px; text-align: center; }
-        input { width: 90%; padding: 10px; margin: 10px 0; border-radius: 4px; border: 1px solid #333; background: #222; color: #fff; }
-        button { width: 100%; padding: 12px; margin-top: 15px; border: none; background: #00bcd4; color: #fff; font-weight: bold; border-radius: 4px; cursor: pointer; }
-        button:hover { background: #0097a7; }
-        .error { color: #ff5252; margin-top: 15px; font-size: 14px; }
+        body { font-family: Arial, sans-serif; background-color: #121212; color: #fff; margin: 0; display: flex; flex-direction: column; align-items: center; height: 100vh; }
+        .container { background: #1e1e1e; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); width: 300px; text-align: center; margin-top: 50px; }
+        button { width: 100%; padding: 12px; margin: 8px 0; border: none; color: #fff; font-weight: bold; border-radius: 4px; cursor: pointer; }
+        .btn-acao { background: #00bcd4; }
+        .btn-downloads { background: #ff9800; }
+        .btn-calendario-geral { background: #9c27b0; }
+        .btn-calendario { background: #4CAF50; }
+        .btn-diretoria { background: #fbc02d; color: #000; }
+        .btn-sair { background: #ff5252; margin-top: 20px; }
+        .btn-voltar { background: #757575; width: auto; padding: 10px 20px; margin: 10px; }
+        
+        #area-visualizador, #area-calendario { display: none; width: 100%; height: 100%; flex-direction: column; align-items: center; }
+        #area-lista-arquivos { width: 90%; text-align: left; margin: 20px 0; }
+        .arquivo-item { background: #333; padding: 10px; margin: 5px 0; border-radius: 4px; cursor: pointer; display: block; width: 100%; text-align: left; }
+        .arquivo-item:hover { background: #444; }
+        
+        .iframe-container { position: relative; width: 90%; height: 80vh; margin-top: 10px; display: none; }
+        .iframe-drive { width: 100%; height: 100%; border: none; border-radius: 8px; background: #fff; }
+        .mascara-seta { position: absolute; top: 0; right: 0; width: 65px; height: 55px; background-color: #121212; z-index: 999; border-top-right-radius: 8px; pointer-events: auto; }
     </style>
 </head>
+<body>
+
+<div id="menu-principal" class="container">
+    <h2>Painel de Membros</h2>
+    <div id="conteudo-dinamico">Carregando...</div>
+</div>
+
+<div id="area-visualizador">
+    <button class="btn-voltar" onclick="voltar()">⬅ Voltar</button>
+    <div id="area-lista-arquivos"></div>
+    
+    <div id="wrapper-iframe" class="iframe-container">
+        <div class="mascara-seta"></div>
+        <iframe id="iframe-drive" class="iframe-drive" src=""></iframe>
+    </div>
+</div>
+
+<div id="area-calendario">
+    <button class="btn-voltar" onclick="voltar()">⬅ Voltar</button>
+    <div style="width: 90%; max-width: 800px; margin-top: 20px;">
+        <div style="position: relative; width: 100%; padding-bottom: 75%; height: 0; overflow: hidden;">
+            <iframe 
+                id="iframe-calendario"
+                src="" 
+                style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;" 
+                frameborder="0" 
+                scrolling="no">
+            </iframe>
+        </div>
+    </div>
+</div>
+
 <script>
-    // Configurações do Supabase
     const SUPABASE_URL = "https://ssmjxusvrcspnmubyseb.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzbWp4dXN2cmNzcG5tdWJ5c2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNjA3NTgsImV4cCI6MjA5NzkzNjc1OH0.iEO1OQhx_emhYT_J_7bOYe3ypMqD_RWYvShKPQuRuzk";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // 1. Verifica se o usuário está logado ao abrir a página
+    // Aguarda o HTML estrutural existir antes de buscar dados do banco
+    document.addEventListener('DOMContentLoaded', () => {
+        verificarSessao();
+    });
+
     async function verificarSessao() {
         const { data: { session }, error } = await supabaseClient.auth.getSession();
         
-        // Se não tiver sessão (não logou), chuta de volta para o index
         if (!session || error) {
             window.location.href = "index.html";
             return;
         }
-
         carregarPerfil(session.user.id);
     }
 
-    // 2. Busca o perfil e monta os botões
     async function carregarPerfil(userId) {
         const divConteudo = document.getElementById('conteudo-dinamico');
         
@@ -43,14 +88,13 @@
             .eq('id', userId)
             .single();
 
+        // Se der erro ou o usuário logado não estiver na tabela 'perfis'
         if (error || !perfil) {
-            divConteudo.innerHTML = "<p>Erro ao carregar seu perfil.</p>";
+            divConteudo.innerHTML = `<p style="color: #ff5252; margin-bottom: 15px;">Seu cadastro não possui permissão na tabela de perfis.</p><button class="btn-sair" onclick="fazerLogout()">Sair e Voltar</button>`;
             return;
         }
 
         let botoesHtml = "";
-
-        // Regras de exibição dos botões (ajuste conforme precisar)
         botoesHtml += `<button class="btn-acao" onclick="abrirSecao('arquivos')">Documentos Gerais</button>`;
         botoesHtml += `<button class="btn-calendario-geral" onclick="abrirSecao('calendario')">Calendário</button>`;
         
@@ -63,13 +107,11 @@
         divConteudo.innerHTML = botoesHtml;
     }
 
-    // 3. Função de Logout
     async function fazerLogout() {
         await supabaseClient.auth.signOut();
         window.location.href = "index.html";
     }
 
-    // 4. Navegação básica entre o menu e as áreas
     function abrirSecao(secao) {
         document.getElementById('menu-principal').style.display = 'none';
         
@@ -85,9 +127,6 @@
         document.getElementById('area-calendario').style.display = 'none';
         document.getElementById('menu-principal').style.display = 'block';
     }
-
-    // Roda a verificação de segurança assim que a página abre
-    verificarSessao();
 </script>
 </body>
 </html>
