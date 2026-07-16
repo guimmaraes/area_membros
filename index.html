@@ -20,6 +20,15 @@
     <h2>Acesso Restrito</h2>
     <input type="email" id="email" placeholder="E-mail" required>
     <input type="password" id="password" placeholder="Senha" required>
+    
+    <!-- Bloco da LGPD inserido exatamente aqui -->
+    <div style="text-align: left; margin: 15px 0; font-size: 11px; color: #bbb; display: flex; align-items: flex-start; gap: 8px;">
+        <input type="checkbox" id="aceite-lgpd" style="margin-top: 3px; cursor: pointer;" required>
+        <label for="aceite-lgpd" style="cursor: pointer; line-height: 1.4;">
+            Li e aceito os <a href="#" onclick="alert('Ao acessar, você autoriza o uso de seus dados (Nome, E-mail, CIM e Grau) exclusivamente para controle de acesso ao painel, armazenamento seguro no Supabase e listagem de arquivos, conforme a LGPD.')" style="color: #00bcd4; text-decoration: underline;">Termos de Uso e Privacidade</a>.
+        </label>
+    </div>
+
     <button onclick="fazerLogin()">Entrar</button>
     <div class="error" id="mensagem-erro"></div>
 </div>
