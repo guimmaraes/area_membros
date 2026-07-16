@@ -14,90 +14,80 @@
         .error { color: #ff5252; margin-top: 15px; font-size: 14px; }
     </style>
 </head>
-<body>
-
-<div class="login-container">
-    <h2>Acesso Restrito</h2>
-    <input type="email" id="email" placeholder="E-mail" required>
-    <input type="password" id="password" placeholder="Senha" required>
-    
-    <!-- Bloco da LGPD -->
-    <div style="text-align: left; margin: 15px 0; font-size: 11px; color: #bbb; display: flex; align-items: flex-start; gap: 8px;">
-        <input type="checkbox" id="aceite-lgpd" style="margin-top: 3px; cursor: pointer;">
-        <label for="aceite-lgpd" style="cursor: pointer; line-height: 1.4;">
-            Li e aceito os <span onclick="mostrarTermos(event)" style="color: #00bcd4; text-decoration: underline; cursor: pointer;">Termos de Uso e Privacidade</span>.
-        </label>
-    </div>
-
-    <!-- Caixa oculta para exibir o texto da LGPD -->
-    <div id="texto-termos" style="display: none; background: #333; padding: 10px; font-size: 10px; color: #fff; border-radius: 4px; margin-bottom: 15px; text-align: left; border: 1px solid #555;">
-        Ao acessar, você autoriza o uso de seus dados (Nome, E-mail, CIM e Grau) exclusivamente para controle de acesso ao painel, armazenamento seguro no Supabase e listagem de arquivos, conforme a LGPD.
-    </div>
-
-    <button onclick="fazerLogin()">Entrar</button>
-    <div class="error" id="mensagem-erro"></div>
-</div>
-
 <script>
+    // Configurações do Supabase
     const SUPABASE_URL = "https://ssmjxusvrcspnmubyseb.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzbWp4dXN2cmNzcG5tdWJ5c2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNjA3NTgsImV4cCI6MjA5NzkzNjc1OH0.iEO1OQhx_emhYT_J_7bOYe3ypMqD_RWYvShKPQuRuzk";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    function mostrarTermos(event) {
-        event.preventDefault();
-        const divTermos = document.getElementById('texto-termos');
-        if (divTermos.style.display === 'none' || divTermos.style.display === '') {
-            divTermos.style.display = 'block';
-        } else {
-            divTermos.style.display = 'none';
+    // 1. Verifica se o usuário está logado ao abrir a página
+    async function verificarSessao() {
+        const { data: { session }, error } = await supabaseClient.auth.getSession();
+        
+        // Se não tiver sessão (não logou), chuta de volta para o index
+        if (!session || error) {
+            window.location.href = "index.html";
+            return;
         }
+
+        carregarPerfil(session.user.id);
     }
 
-    async function fazerLogin() {
-        const erroDiv = document.getElementById('mensagem-erro');
-        erroDiv.innerText = ""; 
-
-        const aceitou = document.getElementById('aceite-lgpd').checked;
-        if (!aceitou) {
-            erroDiv.innerText = "Você precisa aceitar os Termos de Uso e Privacidade para entrar.";
-            return;
-        }
-
-        const email = document.getElementById('email').value;
-        const password = document.getElementById('password').value;
-
-        const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
-            email: email,
-            password: password,
-        });
-
-        if (authError) {
-            erroDiv.innerText = "Usuário ou senha incorretos.";
-            return;
-        }
-
-        const { data: perfil, error: perfilError } = await supabaseClient
+    // 2. Busca o perfil e monta os botões
+    async function carregarPerfil(userId) {
+        const divConteudo = document.getElementById('conteudo-dinamico');
+        
+        const { data: perfil, error } = await supabaseClient
             .from('perfis')
             .select('grau, diretoria')
-            .eq('id', authData.user.id)
+            .eq('id', userId)
             .single();
 
-        if (perfilError || !perfil) {
-            erroDiv.innerText = "Erro ao carregar permissões do perfil.";
+        if (error || !perfil) {
+            divConteudo.innerHTML = "<p>Erro ao carregar seu perfil.</p>";
             return;
         }
 
-        await supabaseClient
-            .from('perfis')
-            .update({ aceite_lgpd: true })
-            .eq('id', authData.user.id);
+        let botoesHtml = "";
 
-        if (perfil.grau === "MM" || perfil.grau === "CM" || perfil.grau === "AM" || perfil.diretoria === true) {
-            window.location.href = "painel.html";
-        } else {
-            erroDiv.innerText = "Perfil sem nível de acesso configurado.";
+        // Regras de exibição dos botões (ajuste conforme precisar)
+        botoesHtml += `<button class="btn-acao" onclick="abrirSecao('arquivos')">Documentos Gerais</button>`;
+        botoesHtml += `<button class="btn-calendario-geral" onclick="abrirSecao('calendario')">Calendário</button>`;
+        
+        if (perfil.diretoria) {
+            botoesHtml += `<button class="btn-diretoria" onclick="alert('Área da Diretoria em construção')">Área da Diretoria</button>`;
+        }
+
+        botoesHtml += `<button class="btn-sair" onclick="fazerLogout()">Sair</button>`;
+
+        divConteudo.innerHTML = botoesHtml;
+    }
+
+    // 3. Função de Logout
+    async function fazerLogout() {
+        await supabaseClient.auth.signOut();
+        window.location.href = "index.html";
+    }
+
+    // 4. Navegação básica entre o menu e as áreas
+    function abrirSecao(secao) {
+        document.getElementById('menu-principal').style.display = 'none';
+        
+        if (secao === 'arquivos') {
+            document.getElementById('area-visualizador').style.display = 'flex';
+        } else if (secao === 'calendario') {
+            document.getElementById('area-calendario').style.display = 'flex';
         }
     }
+
+    function voltar() {
+        document.getElementById('area-visualizador').style.display = 'none';
+        document.getElementById('area-calendario').style.display = 'none';
+        document.getElementById('menu-principal').style.display = 'block';
+    }
+
+    // Roda a verificação de segurança assim que a página abre
+    verificarSessao();
 </script>
 </body>
 </html>
