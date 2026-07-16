@@ -21,12 +21,17 @@
     <input type="email" id="email" placeholder="E-mail" required>
     <input type="password" id="password" placeholder="Senha" required>
     
-    <!-- Bloco da LGPD com chamada direta de função -->
+    <!-- Bloco da LGPD -->
     <div style="text-align: left; margin: 15px 0; font-size: 11px; color: #bbb; display: flex; align-items: flex-start; gap: 8px;">
-        <input type="checkbox" id="aceite-lgpd" style="margin-top: 3px; cursor: pointer;" required>
+        <input type="checkbox" id="aceite-lgpd" style="margin-top: 3px; cursor: pointer;">
         <label for="aceite-lgpd" style="cursor: pointer; line-height: 1.4;">
-            Li e aceito os <span onclick="mostrarTermos()" style="color: #00bcd4; text-decoration: underline; cursor: pointer;">Termos de Uso e Privacidade</span>.
+            Li e aceito os <span onclick="mostrarTermos(event)" style="color: #00bcd4; text-decoration: underline; cursor: pointer;">Termos de Uso e Privacidade</span>.
         </label>
+    </div>
+
+    <!-- Caixa oculta para exibir o texto da LGPD -->
+    <div id="texto-termos" style="display: none; background: #333; padding: 10px; font-size: 10px; color: #fff; border-radius: 4px; margin-bottom: 15px; text-align: left; border: 1px solid #555;">
+        Ao acessar, você autoriza o uso de seus dados (Nome, E-mail, CIM e Grau) exclusivamente para controle de acesso ao painel, armazenamento seguro no Supabase e listagem de arquivos, conforme a LGPD.
     </div>
 
     <button onclick="fazerLogin()">Entrar</button>
@@ -34,31 +39,34 @@
 </div>
 
 <script>
-    // Configurações do seu projeto Supabase
     const SUPABASE_URL = "https://ssmjxusvrcspnmubyseb.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzbWp4dXN2cmNzcG5tdWJ5c2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNjA3NTgsImV4cCI6MjA5NzkzNjc1OH0.iEO1OQhx_emhYT_J_7bOYe3ypMqD_RWYvShKPQuRuzk";
-
-    // Instanciação do cliente
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Função isolada para o termo da LGPD (não quebra o carregamento)
-    function mostrarTermos() {
-        alert("Ao acessar, você autoriza o uso de seus dados (Nome, E-mail, CIM e Grau) exclusivamente para controle de acesso ao painel, armazenamento seguro no Supabase e listagem de arquivos, conforme a LGPD.");
+    // Função que abre/fecha os termos na própria tela, imune a bloqueios de pop-up
+    function mostrarTermos(event) {
+        event.preventDefault(); // Impede que o clique marque o checkbox sem querer
+        const divTermos = document.getElementById('texto-termos');
+        if (divTermos.style.display === 'none') {
+            divTermos.style.display = 'block';
+        } else {
+            divTermos.style.display = 'none';
+        }
     }
 
     async function fazerLogin() {
-        // Verifica se o usuário aceitou os termos da LGPD
+        const erroDiv = document.getElementById('mensagem-erro');
+        erroDiv.innerText = ""; // Limpa erros anteriores da tela
+
+        // Validação da LGPD enviando a mensagem para a div de erro na tela
         const aceitou = document.getElementById('aceite-lgpd').checked;
         if (!aceitou) {
-            alert("Você precisa aceitar os Termos de Uso e Privacidade para acessar a área restrita.");
+            erroDiv.innerText = "Você precisa aceitar os Termos de Uso e Privacidade para entrar.";
             return;
         }
 
-        // Declaração das variáveis do formulário
         const email = document.getElementById('email').value;
         const password = document.getElementById('password').value;
-        const erroDiv = document.getElementById('mensagem-erro');
-        erroDiv.innerText = "";
 
         // 1. Autentica o usuário
         const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
