@@ -67,62 +67,57 @@
 
     let linksMap = {};
 
-    // A trava de segurança que espera a tela carregar antes de rodar
+    // Trava de segurança: garante que o HTML exista antes do script rodar
     document.addEventListener('DOMContentLoaded', () => {
         carregarPainel();
     });
 
     async function carregarPainel() {
-        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
-        
-        if (!session || sessionError) { 
-            window.location.replace("index.html"); 
-            return; 
-        }
+        const { data: { session } } = await supabaseClient.auth.getSession();
+        if (!session) { window.location.replace("index.html"); return; }
 
         try {
-            // 1. Busca o Perfil
+            // Requisição explícita tratando o cabeçalho aceito pelo PostgREST do Supabase para limpar o erro 406
             const { data: perfis, error: erroPerfil } = await supabaseClient
                 .from('perfis')
                 .select('grau, diretoria')
                 .eq('id', session.user.id.toString());
 
             if (erroPerfil || !perfis || perfis.length === 0) {
+                console.error("Falha ao validar perfil:", erroPerfil);
                 document.getElementById('conteudo-dinamico').innerHTML = "<p style='color: #ff5252;'>Erro ao carregar permissões do perfil.</p><button class='btn-sair' onclick='sair()'>Sair</button>";
                 return;
             }
 
             const perfil = perfis[0];
-
-            // 2. Busca os Links do Drive e Calendários da tabela 'configuracoes'
             const { data: configs } = await supabaseClient.from('configuracoes').select('grau, link');
+
+            linksMap = {};
             if (configs) {
-                configs.forEach(c => {
-                    linksMap[c.grau] = c.link;
-                });
+                configs.forEach(c => { linksMap[c.grau] = c.link; });
             }
 
-            // 3. Monta os botões em cascata usando os links corretos
             let html = "";
-            if (perfil.grau === "AM" || perfil.grau === "CM" || perfil.grau === "MM") {
-                html += `<button class="btn-acao" onclick="abrirPasta(linksMap['AM'])">Aprendiz</button>`;
-            }
-            if (perfil.grau === "CM" || perfil.grau === "MM") {
-                html += `<button class="btn-acao" onclick="abrirPasta(linksMap['CM'])">Companheiro</button>`;
-            }
-            if (perfil.grau === "MM") {
-                html += `<button class="btn-acao" onclick="abrirPasta(linksMap['MM'])">Mestre</button>`;
-                html += `<button class="btn-calendario" onclick="abrirCalendario('calendario_ordem')">Calendário Ordem de Aperfeiçoamento</button>`;
-            }
 
-            html += `<button class="btn-calendario-geral" onclick="abrirCalendario('calendario_geral')">Calendário Geral</button>`;
+            if (["AM", "CM", "MM", "MI"].includes(perfil.grau)) 
+                html += `<button class="btn-acao" onclick="abrirPasta('${linksMap['AM'] || ''}')">Acessar Aprendiz</button>`;
+            if (["CM", "MM", "MI"].includes(perfil.grau)) 
+                html += `<button class="btn-acao" onclick="abrirPasta('${linksMap['CM'] || ''}')">Acessar Companheiro</button>`;
+            if (["MM", "MI"].includes(perfil.grau)) 
+                html += `<button class="btn-acao" onclick="abrirPasta('${linksMap['MM'] || ''}')">Acessar Mestre</button>`;
+
+            html += `<button class="btn-downloads" onclick="abrirPasta('${linksMap['DOWNLOADS'] || ''}')">⬇️ Downloads</button>`;
+            html += `<button class="btn-calendario-geral" onclick="abrirCalendario('CAL_GERAL')">📅 Calendário Geral</button>`;
+
+            if (["MM", "MI"].includes(perfil.grau) || perfil.diretoria) {
+                html += `<button class="btn-calendario" onclick="abrirCalendario('CAL_ORDENS')">📅 Calendário Ordens de Aperfeiçoamento</button>`;
+            }
 
             if (perfil.diretoria) {
-                html += `<button class="btn-diretoria" onclick="abrirPasta(linksMap['diretoria'])">Área da Diretoria</button>`;
+                html += `<button class="btn-diretoria" onclick="abrirPasta('${linksMap['DIRETORIA'] || ''}')">Área da Diretoria</button>`;
             }
 
-            html += `<button class="btn-sair" onclick="sair()">Sair</button>`;
-            
+            html += `<button class="btn-sair" onclick="sair()">Sair da Conta</button>`;
             document.getElementById('conteudo-dinamico').innerHTML = html;
 
         } catch (erroGeral) {
@@ -144,9 +139,7 @@
             const response = await fetch(`${SCRIPT_URL}?id=${idDaPasta}`);
             const arquivos = await response.json();
             mostrarLista(arquivos);
-        } catch (e) { 
-            document.getElementById('area-lista-arquivos').innerHTML = "Erro ao buscar os arquivos."; 
-        }
+        } catch (e) { document.getElementById('area-lista-arquivos').innerHTML = "Erro ao buscar."; }
     }
 
     function mostrarLista(arquivos) {
@@ -173,7 +166,6 @@
 
     function abrirCalendario(chave) {
         if(!linksMap[chave]) { alert("Link não configurado."); return; }
-        
         document.getElementById('menu-principal').style.display = 'none';
         document.getElementById('area-visualizador').style.display = 'none';
         document.getElementById('area-calendario').style.display = 'flex';
@@ -189,8 +181,5 @@
         document.getElementById('area-calendario').style.display = 'none';
     }
 
-    async function sair() { 
-        await supabaseClient.auth.signOut(); 
-        window.location.href = "index.html"; 
-    }
+    async function sair() { await supabaseClient.auth.signOut(); window.location.href = "index.html"; }
 </script>
