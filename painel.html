@@ -88,7 +88,6 @@
             .eq('id', userId)
             .single();
 
-        // Se der erro ou o usuário logado não estiver na tabela 'perfis'
         if (error || !perfil) {
             divConteudo.innerHTML = `<p style="color: #ff5252; margin-bottom: 15px;">Seu cadastro não possui permissão na tabela de perfis.</p><button class="btn-sair" onclick="fazerLogout()">Sair e Voltar</button>`;
             return;
