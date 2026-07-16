@@ -10,7 +10,6 @@
         .container { background: #1e1e1e; padding: 30px; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.3); width: 300px; text-align: center; margin-top: 50px; }
         button { width: 100%; padding: 12px; margin: 8px 0; border: none; color: #fff; font-weight: bold; border-radius: 4px; cursor: pointer; }
         .btn-acao { background: #00bcd4; }
-        .btn-downloads { background: #ff9800; }
         .btn-calendario-geral { background: #9c27b0; }
         .btn-calendario { background: #4CAF50; }
         .btn-diretoria { background: #fbc02d; color: #000; }
@@ -31,6 +30,7 @@
 
 <div id="menu-principal" class="container">
     <h2>Painel de Membros</h2>
+    <!-- Esta é a div necessária para carregar os botões que estava faltando -->
     <div id="conteudo-dinamico">Carregando...</div>
 </div>
 
@@ -64,7 +64,6 @@
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzbWp4dXN2cmNzcG5tdWJ5c2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNjA3NTgsImV4cCI6MjA5NzkzNjc1OH0.iEO1OQhx_emhYT_J_7bOYe3ypMqD_RWYvShKPQuRuzk";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Aguarda o HTML estrutural existir antes de buscar dados do banco
     document.addEventListener('DOMContentLoaded', () => {
         verificarSessao();
     });
@@ -94,11 +93,22 @@
         }
 
         let botoesHtml = "";
-        botoesHtml += `<button class="btn-acao" onclick="abrirSecao('arquivos')">Documentos Gerais</button>`;
-        botoesHtml += `<button class="btn-calendario-geral" onclick="abrirSecao('calendario')">Calendário</button>`;
+
+        if (perfil.grau === "AM" || perfil.grau === "CM" || perfil.grau === "MM") {
+            botoesHtml += `<button class="btn-acao" onclick="abrirSecao('aprendiz')">Aprendiz</button>`;
+        }
+        if (perfil.grau === "CM" || perfil.grau === "MM") {
+            botoesHtml += `<button class="btn-acao" onclick="abrirSecao('companheiro')">Companheiro</button>`;
+        }
+        if (perfil.grau === "MM") {
+            botoesHtml += `<button class="btn-acao" onclick="abrirSecao('mestre')">Mestre</button>`;
+            botoesHtml += `<button class="btn-calendario" onclick="abrirSecao('calendario_ordem')">Calendário Ordem de Aperfeiçoamento</button>`;
+        }
+
+        botoesHtml += `<button class="btn-calendario-geral" onclick="abrirSecao('calendario_geral')">Calendário Geral</button>`;
         
         if (perfil.diretoria) {
-            botoesHtml += `<button class="btn-diretoria" onclick="alert('Área da Diretoria em construção')">Área da Diretoria</button>`;
+            botoesHtml += `<button class="btn-diretoria" onclick="abrirSecao('diretoria')">Área da Diretoria</button>`;
         }
 
         botoesHtml += `<button class="btn-sair" onclick="fazerLogout()">Sair</button>`;
@@ -114,10 +124,10 @@
     function abrirSecao(secao) {
         document.getElementById('menu-principal').style.display = 'none';
         
-        if (secao === 'arquivos') {
-            document.getElementById('area-visualizador').style.display = 'flex';
-        } else if (secao === 'calendario') {
+        if (secao === 'calendario_geral' || secao === 'calendario_ordem') {
             document.getElementById('area-calendario').style.display = 'flex';
+        } else {
+            document.getElementById('area-visualizador').style.display = 'flex';
         }
     }
 
