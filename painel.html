@@ -100,11 +100,11 @@
             let html = "";
 
             if (["AM", "CM", "MM", "MI"].includes(perfil.grau)) 
-                html += `<button class="btn-acao" onclick="abrirPasta('${linksMap['AM'] || ''}')">Acessar Aprendiz</button>`;
+                html += `<button class="btn-acao" onclick="abrirPasta('${linksMap['AM'] || ''}')">Aprendiz</button>`;
             if (["CM", "MM", "MI"].includes(perfil.grau)) 
-                html += `<button class="btn-acao" onclick="abrirPasta('${linksMap['CM'] || ''}')">Acessar Companheiro</button>`;
+                html += `<button class="btn-acao" onclick="abrirPasta('${linksMap['CM'] || ''}')">Companheiro</button>`;
             if (["MM", "MI"].includes(perfil.grau)) 
-                html += `<button class="btn-acao" onclick="abrirPasta('${linksMap['MM'] || ''}')">Acessar Mestre</button>`;
+                html += `<button class="btn-acao" onclick="abrirPasta('${linksMap['MM'] || ''}')">Mestre</button>`;
 
            // html += `<button class="btn-downloads" onclick="abrirPasta('${linksMap['DOWNLOADS'] || ''}')">⬇️ Downloads</button>`;
             html += `<button class="btn-calendario-geral" onclick="abrirCalendario('CAL_GERAL')">📅 Calendário Geral</button>`;
