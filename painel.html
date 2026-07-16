@@ -60,82 +60,137 @@
 </div>
 
 <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwLf6erORInbn-B3HgJ5QTaYfhoDq5eIpdXbumQPbY7WGzL1HQ1mW6JPxgGcW0sdGTosA/exec";
     const SUPABASE_URL = "https://ssmjxusvrcspnmubyseb.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzbWp4dXN2cmNzcG5tdWJ5c2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNjA3NTgsImV4cCI6MjA5NzkzNjc1OH0.iEO1OQhx_emhYT_J_7bOYe3ypMqD_RWYvShKPQuRuzk";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
+    let linksMap = {};
+
+    // A trava de segurança que espera a tela carregar antes de rodar
     document.addEventListener('DOMContentLoaded', () => {
-        verificarSessao();
+        carregarPainel();
     });
 
-    async function verificarSessao() {
-        const { data: { session }, error } = await supabaseClient.auth.getSession();
+    async function carregarPainel() {
+        const { data: { session }, error: sessionError } = await supabaseClient.auth.getSession();
         
-        if (!session || error) {
-            window.location.href = "index.html";
-            return;
+        if (!session || sessionError) { 
+            window.location.replace("index.html"); 
+            return; 
         }
-        carregarPerfil(session.user.id);
+
+        try {
+            // 1. Busca o Perfil
+            const { data: perfis, error: erroPerfil } = await supabaseClient
+                .from('perfis')
+                .select('grau, diretoria')
+                .eq('id', session.user.id.toString());
+
+            if (erroPerfil || !perfis || perfis.length === 0) {
+                document.getElementById('conteudo-dinamico').innerHTML = "<p style='color: #ff5252;'>Erro ao carregar permissões do perfil.</p><button class='btn-sair' onclick='sair()'>Sair</button>";
+                return;
+            }
+
+            const perfil = perfis[0];
+
+            // 2. Busca os Links do Drive e Calendários da tabela 'configuracoes'
+            const { data: configs } = await supabaseClient.from('configuracoes').select('grau, link');
+            if (configs) {
+                configs.forEach(c => {
+                    linksMap[c.grau] = c.link;
+                });
+            }
+
+            // 3. Monta os botões em cascata usando os links corretos
+            let html = "";
+            if (perfil.grau === "AM" || perfil.grau === "CM" || perfil.grau === "MM") {
+                html += `<button class="btn-acao" onclick="abrirPasta(linksMap['AM'])">Aprendiz</button>`;
+            }
+            if (perfil.grau === "CM" || perfil.grau === "MM") {
+                html += `<button class="btn-acao" onclick="abrirPasta(linksMap['CM'])">Companheiro</button>`;
+            }
+            if (perfil.grau === "MM") {
+                html += `<button class="btn-acao" onclick="abrirPasta(linksMap['MM'])">Mestre</button>`;
+                html += `<button class="btn-calendario" onclick="abrirCalendario('calendario_ordem')">Calendário Ordem de Aperfeiçoamento</button>`;
+            }
+
+            html += `<button class="btn-calendario-geral" onclick="abrirCalendario('calendario_geral')">Calendário Geral</button>`;
+
+            if (perfil.diretoria) {
+                html += `<button class="btn-diretoria" onclick="abrirPasta(linksMap['diretoria'])">Área da Diretoria</button>`;
+            }
+
+            html += `<button class="btn-sair" onclick="sair()">Sair</button>`;
+            
+            document.getElementById('conteudo-dinamico').innerHTML = html;
+
+        } catch (erroGeral) {
+            document.getElementById('conteudo-dinamico').innerHTML = "<p style='color: #ff5252;'>Erro interno no painel.</p><button class='btn-sair' onclick='sair()'>Sair</button>";
+        }
     }
 
-    async function carregarPerfil(userId) {
-        const divConteudo = document.getElementById('conteudo-dinamico');
-        
-        const { data: perfil, error } = await supabaseClient
-            .from('perfis')
-            .select('grau, diretoria')
-            .eq('id', userId)
-            .single();
+    async function abrirPasta(idDaPasta) {
+        if(!idDaPasta) { alert("ID não configurado no banco."); return; }
 
-        if (error || !perfil) {
-            divConteudo.innerHTML = `<p style="color: #ff5252; margin-bottom: 15px;">Seu cadastro não possui permissão na tabela de perfis.</p><button class="btn-sair" onclick="fazerLogout()">Sair e Voltar</button>`;
-            return;
-        }
-
-        let botoesHtml = "";
-
-        if (perfil.grau === "AM" || perfil.grau === "CM" || perfil.grau === "MM") {
-            botoesHtml += `<button class="btn-acao" onclick="abrirSecao('aprendiz')">Aprendiz</button>`;
-        }
-        if (perfil.grau === "CM" || perfil.grau === "MM") {
-            botoesHtml += `<button class="btn-acao" onclick="abrirSecao('companheiro')">Companheiro</button>`;
-        }
-        if (perfil.grau === "MM") {
-            botoesHtml += `<button class="btn-acao" onclick="abrirSecao('mestre')">Mestre</button>`;
-            botoesHtml += `<button class="btn-calendario" onclick="abrirSecao('calendario_ordem')">Calendário Ordem de Aperfeiçoamento</button>`;
-        }
-
-        botoesHtml += `<button class="btn-calendario-geral" onclick="abrirSecao('calendario_geral')">Calendário Geral</button>`;
-        
-        if (perfil.diretoria) {
-            botoesHtml += `<button class="btn-diretoria" onclick="abrirSecao('diretoria')">Área da Diretoria</button>`;
-        }
-
-        botoesHtml += `<button class="btn-sair" onclick="fazerLogout()">Sair</button>`;
-
-        divConteudo.innerHTML = botoesHtml;
-    }
-
-    async function fazerLogout() {
-        await supabaseClient.auth.signOut();
-        window.location.href = "index.html";
-    }
-
-    function abrirSecao(secao) {
         document.getElementById('menu-principal').style.display = 'none';
-        
-        if (secao === 'calendario_geral' || secao === 'calendario_ordem') {
-            document.getElementById('area-calendario').style.display = 'flex';
-        } else {
-            document.getElementById('area-visualizador').style.display = 'flex';
+        document.getElementById('area-visualizador').style.display = 'flex';
+        document.getElementById('area-calendario').style.display = 'none';
+        document.getElementById('area-lista-arquivos').style.display = 'block';
+        document.getElementById('wrapper-iframe').style.display = 'none';
+        document.getElementById('area-lista-arquivos').innerHTML = "Carregando...";
+
+        try {
+            const response = await fetch(`${SCRIPT_URL}?id=${idDaPasta}`);
+            const arquivos = await response.json();
+            mostrarLista(arquivos);
+        } catch (e) { 
+            document.getElementById('area-lista-arquivos').innerHTML = "Erro ao buscar os arquivos."; 
         }
+    }
+
+    function mostrarLista(arquivos) {
+        let html = `<h3>Arquivos</h3>`;
+        if (arquivos.length === 0) { html += "<p>Nenhum arquivo encontrado.</p>"; }
+
+        arquivos.forEach(arq => {
+            html += `
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <button class="arquivo-item" style="flex-grow: 1;" onclick="abrirPDF('${arq.id}')">📄 ${arq.name}</button>
+                    <a href="https://drive.google.com/uc?export=download&id=${arq.id}" target="_blank" style="background: #4caf50; color: white; padding: 10px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer; text-align: center;">BAIXAR</a>
+                </div>`;
+        });
+
+        document.getElementById('area-lista-arquivos').innerHTML = html;
+    }
+
+    function abrirPDF(idDoArquivo) {
+        document.getElementById('area-lista-arquivos').style.display = 'none';
+        const iframe = document.getElementById('iframe-drive');
+        iframe.src = `https://drive.google.com/file/d/${idDoArquivo}/preview`;
+        document.getElementById('wrapper-iframe').style.display = 'block';
+    }
+
+    function abrirCalendario(chave) {
+        if(!linksMap[chave]) { alert("Link não configurado."); return; }
+        
+        document.getElementById('menu-principal').style.display = 'none';
+        document.getElementById('area-visualizador').style.display = 'none';
+        document.getElementById('area-calendario').style.display = 'flex';
+        document.getElementById('iframe-calendario').src = linksMap[chave] || "";
     }
 
     function voltar() {
+        document.getElementById('wrapper-iframe').style.display = 'none';
+        document.getElementById('iframe-drive').src = "";
+        document.getElementById('iframe-calendario').src = "";
+        document.getElementById('menu-principal').style.display = 'block';
         document.getElementById('area-visualizador').style.display = 'none';
         document.getElementById('area-calendario').style.display = 'none';
-        document.getElementById('menu-principal').style.display = 'block';
+    }
+
+    async function sair() { 
+        await supabaseClient.auth.signOut(); 
+        window.location.href = "index.html"; 
     }
 </script>
-</body>
-</html>
