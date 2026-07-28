@@ -30,7 +30,6 @@
 
 <div id="menu-principal" class="container">
     <h2>Painel de Membros</h2>
-    <!-- Esta é a div necessária para carregar os botões que estava faltando -->
     <div id="conteudo-dinamico">Carregando...</div>
 </div>
 
@@ -67,7 +66,6 @@
 
     let linksMap = {};
 
-    // Trava de segurança: garante que o HTML exista antes do script rodar
     document.addEventListener('DOMContentLoaded', () => {
         carregarPainel();
     });
@@ -77,7 +75,6 @@
         if (!session) { window.location.replace("index.html"); return; }
 
         try {
-            // Requisição explícita tratando o cabeçalho aceito pelo PostgREST do Supabase para limpar o erro 406
             const { data: perfis, error: erroPerfil } = await supabaseClient
                 .from('perfis')
                 .select('grau, diretoria')
@@ -100,13 +97,14 @@
             let html = "";
 
             if (["AM", "CM", "MM", "MI"].includes(perfil.grau)) 
-                html += `<button class="btn-acao" onclick="abrirPasta('${linksMap['AM'] || ''}')">Aprendiz</button>`;
+                html += `<button class="btn-acao" onclick="abrirPasta('${linksMap['AM'] || ''}')">Acessar Aprendiz</button>`;
             if (["CM", "MM", "MI"].includes(perfil.grau)) 
-                html += `<button class="btn-acao" onclick="abrirPasta('${linksMap['CM'] || ''}')">Companheiro</button>`;
+                html += `<button class="btn-acao" onclick="abrirPasta('${linksMap['CM'] || ''}')">Acessar Companheiro</button>`;
             if (["MM", "MI"].includes(perfil.grau)) 
-                html += `<button class="btn-acao" onclick="abrirPasta('${linksMap['MM'] || ''}')">Mestre</button>`;
+                html += `<button class="btn-acao" onclick="abrirPasta('${linksMap['MM'] || ''}')">Acessar Mestre</button>`;
 
-           // html += `<button class="btn-downloads" onclick="abrirPasta('${linksMap['DOWNLOADS'] || ''}')">⬇️ Downloads</button>`;
+            // html += `<button class="btn-downloads" onclick="abrirPasta('${linksMap['DOWNLOADS'] || ''}')">⬇️ Downloads</button>`;
+            
             html += `<button class="btn-calendario-geral" onclick="abrirCalendario('CAL_GERAL')">📅 Calendário Geral</button>`;
 
             if (["MM", "MI"].includes(perfil.grau) || perfil.diretoria) {
@@ -150,6 +148,7 @@
             html += `
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
                     <button class="arquivo-item" style="flex-grow: 1;" onclick="abrirPDF('${arq.id}')">📄 ${arq.name}</button>
+                    <a href="https://drive.google.com/file/d/${arq.id}/view" target="_blank" style="background: #2196F3; color: white; padding: 10px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer; text-align: center;">ABRIR</a>
                     <a href="https://drive.google.com/uc?export=download&id=${arq.id}" target="_blank" style="background: #4caf50; color: white; padding: 10px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer; text-align: center;">BAIXAR</a>
                 </div>`;
         });
@@ -183,3 +182,5 @@
 
     async function sair() { await supabaseClient.auth.signOut(); window.location.href = "index.html"; }
 </script>
+</body>
+</html>
