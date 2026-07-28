@@ -59,7 +59,7 @@
 </div>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwLf6erORInbn-B3HgJ5QTaYfhoDq5eIpdXbumQPbY7WGzL1HQ1mW6JPxgGcW0sdGTosA/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxWvu2_f3Vu7xMUkS4vp7YxaDDetA5g5NFa3I8QtAYfTIW96CbxONI8sot9ZmGqtK9jcA/exec";
     const SUPABASE_URL = "https://ssmjxusvrcspnmubyseb.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNzbWp4dXN2cmNzcG5tdWJ5c2ViIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIzNjA3NTgsImV4cCI6MjA5NzkzNjc1OH0.iEO1OQhx_emhYT_J_7bOYe3ypMqD_RWYvShKPQuRuzk";
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -144,16 +144,23 @@
     }
 
     function mostrarLista(arquivos) {
-        let html = `<h3>Arquivos</h3>`;
-        if (arquivos.length === 0) { html += "<p>Nenhum arquivo encontrado.</p>"; }
+        let html = `<h3>Arquivos e Pastas</h3>`;
+        if (arquivos.length === 0) { html += "<p>Nenhum item encontrado.</p>"; }
 
-        arquivos.forEach(arq => {
-            html += `
+        arquivos.forEach(item => {
+            if (item.isFolder) {
+                html += `
                 <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <button class="arquivo-item" style="flex-grow: 1;" onclick="abrirPDF('${arq.id}')">📄 ${arq.name}</button>
-                    <a href="https://drive.google.com/file/d/${arq.id}/view" target="_blank" style="background: #2196F3; color: white; padding: 10px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer; text-align: center;">ABRIR</a>
-                    <a href="https://drive.google.com/uc?export=download&id=${arq.id}" target="_blank" style="background: #4caf50; color: white; padding: 10px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer; text-align: center;">BAIXAR</a>
+                    <button class="arquivo-item" style="flex-grow: 1; background: #555;" onclick="abrirPasta('${item.id}')">📁 ${item.name}</button>
                 </div>`;
+            } else {
+                html += `
+                <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <button class="arquivo-item" style="flex-grow: 1;" onclick="abrirPDF('${item.id}')">📄 ${item.name}</button>
+                    <a href="https://drive.google.com/file/d/${item.id}/view" target="_blank" style="background: #2196F3; color: white; padding: 10px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer; text-align: center;">ABRIR</a>
+                    <a href="https://drive.google.com/uc?export=download&id=${item.id}" target="_blank" style="background: #4caf50; color: white; padding: 10px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 12px; cursor: pointer; text-align: center;">BAIXAR</a>
+                </div>`;
+            }
         });
 
         document.getElementById('area-lista-arquivos').innerHTML = html;
