@@ -96,22 +96,25 @@
 
             let html = "";
 
-            if (["AM", "CM", "MM", "MI"].includes(perfil.grau)) 
+            if (["AM", "CM", "MM", "MI", "MI VM"].includes(perfil.grau)) 
                 html += `<button class="btn-acao" onclick="abrirPasta('${linksMap['AM'] || ''}')">Acessar Aprendiz</button>`;
-            if (["CM", "MM", "MI"].includes(perfil.grau)) 
+            
+            if (["CM", "MM", "MI", "MI VM"].includes(perfil.grau)) 
                 html += `<button class="btn-acao" onclick="abrirPasta('${linksMap['CM'] || ''}')">Acessar Companheiro</button>`;
-            if (["MM", "MI"].includes(perfil.grau)) 
+            
+            if (["MM", "MI", "MI VM"].includes(perfil.grau)) 
                 html += `<button class="btn-acao" onclick="abrirPasta('${linksMap['MM'] || ''}')">Acessar Mestre</button>`;
 
-            // html += `<button class="btn-downloads" onclick="abrirPasta('${linksMap['DOWNLOADS'] || ''}')">⬇️ Downloads</button>`;
-            
+            if (perfil.grau === "MI VM") 
+                html += `<button class="btn-acao" style="background: #d32f2f;" onclick="abrirPasta('1nKADVeeFKdNtklsrFk7Ue3E_QSE5vguL')">Acessar Venerável Mestre</button>`;
+
             html += `<button class="btn-calendario-geral" onclick="abrirCalendario('CAL_GERAL')">📅 Calendário Geral</button>`;
 
-            if (["MM", "MI"].includes(perfil.grau) || perfil.diretoria) {
+            if (["MM", "MI", "MI VM"].includes(perfil.grau) || perfil.diretoria) {
                 html += `<button class="btn-calendario" onclick="abrirCalendario('CAL_ORDENS')">📅 Calendário Ordens de Aperfeiçoamento</button>`;
             }
 
-            if (perfil.diretoria) {
+            if (perfil.diretoria || perfil.grau === "MI VM") {
                 html += `<button class="btn-diretoria" onclick="abrirPasta('${linksMap['DIRETORIA'] || ''}')">Área da Diretoria</button>`;
             }
 
